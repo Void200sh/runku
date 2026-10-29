@@ -115,6 +115,21 @@ fun SettingsScreen(vm: RunkuViewModel, nav: NavController) {
                     vm.setHrSource(next)
                 })
             }
+            Spacer(Modifier.height(10.dp))
+            Row(
+                Modifier.fillMaxWidth().clip(MaterialTheme.shapes.small).background(c.surface).padding(14.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(Modifier.weight(1f)) {
+                    Text("Status koneksi", fontWeight = FontWeight.SemiBold, color = c.text)
+                    Text(
+                        if (settings.hrSource == "off") "Nonaktif" else "Menunggu sensor…",
+                        fontSize = 12.sp, color = c.muted,
+                    )
+                }
+                Chip("●●●")
+            }
 
             Spacer(Modifier.height(20.dp))
             Label("Peta")
@@ -134,6 +149,27 @@ fun SettingsScreen(vm: RunkuViewModel, nav: NavController) {
                 Chip("Ganti", selected = true, onClick = {
                     vm.setMapMode(if (settings.mapMode == "tiles") "canvas" else "tiles")
                 })
+            }
+
+            Spacer(Modifier.height(22.dp))
+            Label("Lainnya")
+            Spacer(Modifier.height(10.dp))
+            RunkuCardCompat {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text("Satuan", fontWeight = FontWeight.SemiBold, color = c.text)
+                        Text("km · km/h", fontSize = 12.sp, color = c.muted)
+                    }
+                    Chip("Ubah")
+                }
+                Spacer(Modifier.height(12.dp))
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text("Ekspor data", fontWeight = FontWeight.SemiBold, color = c.text)
+                        Text("GPX / JSON / CSV", fontSize = 12.sp, color = c.muted)
+                    }
+                    Chip("Ekspor")
+                }
             }
 
             Spacer(Modifier.height(24.dp))
@@ -185,4 +221,17 @@ private fun ThemeCard(theme: RunkuTheme, selected: Boolean, onClick: () -> Unit)
             )
         }
     }
+}
+
+
+@Composable
+private fun RunkuCardCompat(content: @Composable () -> Unit) {
+    val c = MaterialTheme.runku
+    androidx.compose.foundation.layout.Box(
+        Modifier
+            .fillMaxWidth()
+            .clip(MaterialTheme.shapes.small)
+            .background(c.surface)
+            .padding(14.dp),
+    ) { androidx.compose.foundation.layout.Column { content() } }
 }

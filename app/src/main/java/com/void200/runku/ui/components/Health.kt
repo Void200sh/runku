@@ -1,6 +1,10 @@
 package com.void200.runku.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -128,5 +132,41 @@ fun ProgressBar(progress: Float, modifier: Modifier = Modifier) {
                 .clip(RoundedCornerShape(999.dp))
                 .background(c.accentGradient),
         )
+    }
+}
+
+/** Simple HR sparkline from per-point bpm samples (0 = no reading). */
+@Composable
+fun HrChart(bpmSeries: List<Int>, modifier: Modifier = Modifier) {
+    val c = MaterialTheme.runku
+    val data = bpmSeries.filter { it > 0 }
+    Box(
+        modifier
+            .height(70.dp)
+            .clip(RoundedCornerShape(14.dp))
+            .background(c.surface2),
+    ) {
+        if (data.size >= 2) {
+            androidx.compose.foundation.Canvas(Modifier.fillMaxSize()) {
+                val min = (data.min() - 5).coerceAtLeast(40).toFloat()
+                val max = (data.max() + 5).toFloat().coerceAtLeast(min + 10f)
+                val stepX = size.width / (data.size - 1).coerceAtLeast(1)
+                val path = androidx.compose.ui.graphics.Path()
+                data.forEachIndexed { i, v ->
+                    val x = i * stepX
+                    val y = size.height - ((v - min) / (max - min)) * size.height
+                    if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
+                }
+                drawPath(
+                    path,
+                    color = Color(0xFFEF4444),
+                    style = Stroke(width = 4f, cap = StrokeCap.Round),
+                )
+            }
+        } else {
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Text("Belum ada data detak", fontSize = 11.sp, color = c.muted)
+            }
+        }
     }
 }

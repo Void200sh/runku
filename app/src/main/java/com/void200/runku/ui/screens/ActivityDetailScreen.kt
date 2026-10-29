@@ -14,9 +14,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
@@ -77,10 +79,7 @@ fun ActivityDetailScreen(vm: RunkuViewModel, id: Long, nav: NavController) {
     Scaffold(
         containerColor = c.bg,
         bottomBar = {
-            com.void200.runku.ui.components.RunkuBottomBar(
-                com.void200.runku.ui.components.NavTab.HISTORY,
-                onSelect = { tab -> nav.navigate(tab.route) { launchSingleTop = true } },
-            )
+            DetailTabs(nav)
         },
     ) { pad ->
         Column(
@@ -139,19 +138,38 @@ fun ActivityDetailScreen(vm: RunkuViewModel, id: Long, nav: NavController) {
                     },
                     Modifier.weight(1f).height(52.dp), shape = RoundedCornerShape(999.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = c.surface2, contentColor = c.accent),
-                ) { Text("Unduh JPG", fontWeight = FontWeight.Bold) }
+                ) { Text("Simpan Gambar", fontWeight = FontWeight.Bold) }
             }
 
-            if (act.avgHr > 0) {
-                Spacer(Modifier.height(20.dp))
-                Label("Detak jantung")
-                Spacer(Modifier.height(10.dp))
-                HeartRateCard(
-                    bpm = act.avgHr,
-                    zoneLabel = "rata²",
-                    sourceLabel = "maks ${act.maxHr}",
-                    modifier = Modifier.fillMaxWidth(),
-                )
+            Spacer(Modifier.height(20.dp))
+            Label("Detak jantung")
+            Spacer(Modifier.height(10.dp))
+            RunkuCard(Modifier.fillMaxWidth()) {
+                Column {
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Column {
+                            Text("RATA²", fontSize = 11.sp, letterSpacing = 1.4.sp, color = c.muted)
+                            Text(if (act.avgHr > 0) "${act.avgHr}" else "--", fontSize = 26.sp, fontWeight = FontWeight.ExtraBold, color = c.text)
+                        }
+                        Column(horizontalAlignment = Alignment.End) {
+                            Text("MAKS", fontSize = 11.sp, letterSpacing = 1.4.sp, color = c.muted)
+                            Text(if (act.maxHr > 0) "${act.maxHr}" else "--", fontSize = 26.sp, fontWeight = FontWeight.ExtraBold, color = androidx.compose.ui.graphics.Color(0xFFEF4444))
+                        }
+                    }
+                    Spacer(Modifier.height(10.dp))
+                    com.void200.runku.ui.components.HrChart(points.map { it.hr }, Modifier.fillMaxWidth())
+                    Spacer(Modifier.height(12.dp))
+                    com.void200.runku.ui.components.ZoneBar(
+                        if (act.avgHr > 0) vm.zone(act.avgHr).ordinal + 1 else 0,
+                        Modifier.fillMaxWidth(),
+                    )
+                    Spacer(Modifier.height(6.dp))
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        listOf("Z1", "Z2", "Z3", "Z4", "Z5").forEach {
+                            Text(it, fontSize = 10.sp, color = c.muted)
+                        }
+                    }
+                }
             }
 
             // ---- splits per km ----
@@ -236,7 +254,36 @@ fun ActivityDetailScreen(vm: RunkuViewModel, id: Long, nav: NavController) {
                 }
             }
 
+            Spacer(Modifier.height(14.dp))
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Chip("Samarkan area", modifier = Modifier.weight(1f))
+                Chip("Ubah nama", modifier = Modifier.weight(1f))
+            }
+
             Spacer(Modifier.height(24.dp))
+        }
+    }
+}
+
+@Composable
+private fun DetailTabs(nav: NavController) {
+    val c = MaterialTheme.runku
+    Row(
+        Modifier.fillMaxWidth().background(c.bg).padding(vertical = 8.dp),
+        horizontalArrangement = Arrangement.SpaceEvenly,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        listOf("Detail" to true, "Split" to false, "Bagikan" to false).forEach { (label, on) ->
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Box(
+                    Modifier
+                        .size(23.dp)
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(if (on) c.accent else c.muted.copy(alpha = 0.45f)),
+                )
+                androidx.compose.foundation.layout.Spacer(Modifier.height(4.dp))
+                Text(label, fontSize = 10.sp, color = if (on) c.accent else c.muted)
+            }
         }
     }
 }
