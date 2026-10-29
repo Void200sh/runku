@@ -1,0 +1,510 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>runku — preview</title>
+<style>
+  :root{
+    --bg:#f7f8fb; --surface:#ffffff; --surface2:#eef1f7;
+    --line:#e2e6ee; --text:#12151b; --muted:#68707e;
+    --accent:#4f7dfb; --accent-ink:#ffffff; --accent-soft:#e6ecff; --accent2:#7aa2ff;
+    --warn:#e0a300; --danger:#e0483b;
+    --r-lg:24px; --r-md:18px; --r-pill:999px;
+    --shadow:0 14px 34px -16px rgba(20,30,60,.35);
+    --font:ui-sans-serif,system-ui,"Segoe UI",Roboto,sans-serif;
+    --glow:none;
+  }
+  html[data-mode="dark"]{
+    --bg:#0d0f13; --surface:#161a20; --surface2:#1d222a;
+    --line:#2a313c; --text:#eef1f6; --muted:#8b93a1; --accent-soft:#1b2540;
+    --shadow:0 14px 34px -16px rgba(0,0,0,.75);
+  }
+
+  /* ===== TEMA ===== */
+  html[data-theme="pixel"]{ --accent:#3b6ef6; --accent2:#7d5cff; --accent-ink:#fff; --r-lg:28px; --r-md:22px; --r-pill:999px }
+  html[data-theme="pixel"][data-mode="light"]{ --bg:#f7f9fc; --surface:#ffffff; --surface2:#e9effb; --accent-soft:#dfe8ff; --line:#e0e6f2 }
+  html[data-theme="pixel"][data-mode="dark"]{ --bg:#0c0e13; --surface:#171a21; --surface2:#1f2531; --accent:#8ab4ff; --accent2:#c4b0ff; --accent-ink:#04121f; --accent-soft:#1c2b47; --line:#2a3346 }
+
+  html[data-theme="emerald"]{ --accent:#34d399; --accent-ink:#062018; --r-lg:22px; --r-md:14px }
+  html[data-theme="emerald"][data-mode="light"]{ --bg:#f4f8f6; --surface:#fff; --surface2:#e9f3ee; --accent-soft:#dcf5ea; --line:#dcebe4; --text:#0e1714; --muted:#5c6f68 }
+  html[data-theme="emerald"][data-mode="dark"]{ --bg:#0b0d10; --surface:#14171c; --surface2:#1b1f26; --line:#262b33; --accent:#34d399; --accent-soft:#123a2c; --accent2:#22d3ee }
+
+  html[data-theme="midnight"]{ --accent:#60a5fa; --accent-ink:#06132a; --r-lg:20px; --r-md:16px }
+  html[data-theme="midnight"][data-mode="light"]{ --bg:#eef4fb; --surface:#fff; --surface2:#e3edf9; --accent-soft:#dcebfd; --line:#d8e5f2; --text:#0d1826; --muted:#5d6f83 }
+  html[data-theme="midnight"][data-mode="dark"]{ --bg:#080c13; --surface:#111826; --surface2:#18202f; --line:#25324a; --accent:#60a5fa; --accent-soft:#132141; --accent2:#a78bfa }
+
+  html[data-theme="sunset"]{ --accent:#fb7185; --accent-ink:#2a0a12; --r-lg:22px; --r-md:15px }
+  html[data-theme="sunset"][data-mode="light"]{ --bg:#fdf5f4; --surface:#fff; --surface2:#fbeae6; --accent:#f2705a; --accent-soft:#ffe6df; --line:#f4ddd6; --text:#1e1310; --muted:#7d6a64 }
+  html[data-theme="sunset"][data-mode="dark"]{ --bg:#120d0c; --surface:#1c1514; --surface2:#261c1a; --line:#382824; --accent:#fb8a6f; --accent-soft:#3a1e17; --accent2:#fbbf24 }
+
+  html[data-theme="mono"]{ --accent:#18181b; --accent-ink:#fff; --r-lg:18px; --r-md:12px }
+  html[data-theme="mono"][data-mode="light"]{ --bg:#fafafa; --surface:#fff; --surface2:#f1f1f1; --accent:#18181b; --accent-soft:#e9e9e9; --line:#e4e4e4; --text:#0a0a0a; --muted:#6b6b6b }
+  html[data-theme="mono"][data-mode="dark"]{ --bg:#0a0a0a; --surface:#151515; --surface2:#1d1d1d; --line:#2a2a2a; --accent:#fafafa; --accent-ink:#0a0a0a; --accent-soft:#242424; --text:#fafafa; --muted:#9a9a9a }
+
+  /* NEON — cyberpunk */
+  html[data-theme="neon"]{ --accent:#22d3ee; --accent2:#f0abfc; --accent-ink:#021317; --r-lg:16px; --r-md:12px; --glow:0 0 22px color-mix(in srgb,var(--accent) 55%,transparent) }
+  html[data-theme="neon"][data-mode="light"]{ --bg:#f3f6ff; --surface:#fff; --surface2:#e8ecff; --accent:#0891b2; --accent-soft:#d8f6fb; --line:#d7e3f5; --text:#0a1020; --muted:#5b6b86 }
+  html[data-theme="neon"][data-mode="dark"]{ --bg:#05060c; --surface:#0c0f1a; --surface2:#121629; --line:#232a44; --accent:#22d3ee; --accent2:#f0abfc; --accent-soft:#0e1c2e; --text:#e9eeff; --muted:#7f8bad }
+
+  /* AURORA — gradien utara */
+  html[data-theme="aurora"]{ --accent:#5eead4; --accent2:#a78bfa; --accent-ink:#04211c; --r-lg:24px; --r-md:18px }
+  html[data-theme="aurora"][data-mode="light"]{ --bg:#f2f7fb; --surface:#fff; --surface2:#e6f0f5; --accent:#0d9488; --accent-soft:#d6f3ee; --line:#d6e6ee; --text:#07171c; --muted:#587084 }
+  html[data-theme="aurora"][data-mode="dark"]{ --bg:#060a12; --surface:#0d1420; --surface2:#141d2e; --line:#20304a; --accent:#5eead4; --accent2:#a78bfa; --accent-soft:#0e2230; --text:#eaf4ff; --muted:#7e91ab }
+
+  /* CARBON — F1 racing */
+  html[data-theme="carbon"]{ --accent:#e11d48; --accent2:#fbbf24; --accent-ink:#fff; --r-lg:14px; --r-md:10px }
+  html[data-theme="carbon"][data-mode="light"]{ --bg:#f5f5f6; --surface:#fff; --surface2:#ececee; --accent:#e11d48; --accent-soft:#ffe2e8; --line:#e0e0e3; --text:#0d0d0f; --muted:#6b6b70 }
+  html[data-theme="carbon"][data-mode="dark"]{ --bg:#0a0a0b; --surface:#141416; --surface2:#1c1c1f; --line:#2b2b30; --accent:#f43f5e; --accent2:#fbbf24; --accent-soft:#331119; --text:#f2f2f4; --muted:#8f8f99 }
+
+  /* SAKURA — soft pink */
+  html[data-theme="sakura"]{ --accent:#f472b6; --accent2:#c084fc; --accent-ink:#3a0722; --r-lg:28px; --r-md:20px }
+  html[data-theme="sakura"][data-mode="light"]{ --bg:#fdf5fa; --surface:#fff; --surface2:#fbe9f4; --accent:#ec4899; --accent-soft:#ffe4f1; --line:#f6dcec; --text:#24101c; --muted:#7d6375 }
+  html[data-theme="sakura"][data-mode="dark"]{ --bg:#130a10; --surface:#1d121a; --surface2:#271824; --line:#3a2333; --accent:#f472b6; --accent2:#c084fc; --accent-soft:#331428; --text:#fdeef7; --muted:#a5869b }
+
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{background:#0a0a0a;color:var(--text);font-family:var(--font)}
+  body{display:flex;justify-content:center;gap:26px;flex-wrap:wrap;padding:22px 14px 40px;min-height:100dvh;background:linear-gradient(180deg,#101216,#07080a)}
+  .phone{width:340px;height:720px;background:var(--bg);border:1px solid var(--line);border-radius:40px;overflow:hidden;position:relative;box-shadow:var(--shadow);display:flex;flex-direction:column;color:var(--text)}
+  .statusbar{height:34px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;font-size:12px;color:var(--muted);border-bottom:1px solid var(--line)}
+  .statusbar b{color:var(--accent);font-weight:700}
+  .screen{flex:1;overflow-y:auto;padding:18px 18px 90px}
+  .screen::-webkit-scrollbar{width:0}
+  .label{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+  h1{font-size:26px;letter-spacing:-.02em;line-height:1.05}
+  .sub{color:var(--muted);font-size:13px;line-height:1.5}
+  .row{display:flex;align-items:center;justify-content:space-between}
+  .grid{display:grid;gap:12px}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);padding:16px}
+  .metric{font-variant-numeric:tabular-nums;font-size:52px;font-weight:700;letter-spacing:-.03em;line-height:1}
+  .metric small{font-size:16px;color:var(--muted);font-weight:500;margin-left:4px}
+  .kick{margin-top:16px;border:1px solid var(--accent);color:var(--accent-ink);background:var(--accent);
+    font-weight:700;text-align:center;padding:16px;border-radius:var(--r-pill);font-size:16px;box-shadow:0 10px 26px -12px var(--accent),var(--glow);cursor:pointer}
+  .kick.stop{background:var(--danger);border-color:var(--danger);box-shadow:0 10px 26px -12px var(--danger);color:#fff}
+  .kick.ghost{background:transparent;color:var(--accent);box-shadow:none}
+  .kick:active{transform:scale(.98)}
+  .statgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .stat{background:var(--surface2);border:1px solid var(--line);border-radius:var(--r-md);padding:14px}
+  .stat .v{font-size:24px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+  .stat .k{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.14em;margin-bottom:6px}
+
+  /* MAP vs CANVAS */
+  .map{height:190px;border-radius:var(--r-md);border:1px solid var(--line);overflow:hidden;position:relative;background:var(--surface2)}
+  .map.tiles::before{content:"";position:absolute;inset:0;opacity:.5;
+    background:repeating-linear-gradient(0deg,transparent 0 23px,var(--line) 23px 24px),repeating-linear-gradient(90deg,transparent 0 23px,var(--line) 23px 24px)}
+  .map.canvas::before{content:"";position:absolute;inset:0;opacity:.45;
+    background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);
+    background-size:34px 34px}
+  .map svg{position:absolute;inset:0;width:100%;height:100%}
+  .map .pill{position:absolute;top:10px;left:10px;background:color-mix(in srgb,var(--surface) 82%,transparent);border:1px solid var(--line);border-radius:var(--r-pill);padding:6px 12px;font-size:11px;color:var(--text);backdrop-filter:blur(6px)}
+  .map .dot{position:absolute;width:14px;height:14px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 6px color-mix(in srgb,var(--accent) 22%,transparent),var(--glow);left:50%;top:55%;transform:translate(-50%,-50%)}
+  .map .tag{position:absolute;bottom:10px;right:10px;font-size:10px;color:var(--muted);background:color-mix(in srgb,var(--surface) 80%,transparent);border:1px solid var(--line);border-radius:var(--r-pill);padding:4px 9px}
+
+  .item{display:flex;gap:14px;align-items:center;padding:14px 0;border-bottom:1px solid var(--line)}
+  .item:last-child{border-bottom:none}
+  .ico{width:42px;height:42px;border-radius:12px;background:var(--accent-soft);display:grid;place-items:center;color:var(--accent);font-weight:800;font-size:12px}
+  .item .t{font-weight:600}
+  .item .m{color:var(--muted);font-size:12px;margin-top:2px}
+  .tabs{position:absolute;bottom:0;left:0;right:0;height:74px;border-top:1px solid var(--line);background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:space-around;padding-bottom:10px}
+  .tab{display:flex;flex-direction:column;align-items:center;gap:5px;font-size:10px;color:var(--muted);letter-spacing:.06em;cursor:pointer}
+  .tab.on{color:var(--accent)}
+  .tab svg{width:23px;height:23px;display:block;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;transition:transform .15s}
+  .tab.on svg{transform:translateY(-1px);filter:drop-shadow(0 0 6px color-mix(in srgb,var(--accent) 45%,transparent))}
+  /* Material 3 pill indicator (pixel) */
+  html[data-theme="pixel"] .tab{position:relative;padding-top:6px}
+  html[data-theme="pixel"] .tab .icwrap{padding:5px 20px;border-radius:99px;transition:background .18s;display:block}
+  html[data-theme="pixel"] .tab.on .icwrap{background:var(--accent-soft)}
+  html[data-theme="pixel"] .tab.on svg{filter:none;transform:none}
+
+  /* brand row inside status bar */
+  .brand{display:inline-flex;align-items:center;gap:6px}
+  .brand svg{width:15px;height:15px;display:block}
+  .brandmark{display:inline-flex;align-items:center;gap:9px;margin-bottom:14px}
+  .brandmark .lg{width:36px;height:36px;border-radius:11px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:grid;place-items:center;box-shadow:0 8px 20px -10px var(--accent),var(--glow)}
+  .brandmark .lg svg{width:20px;height:20px;stroke:var(--accent-ink);fill:none;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+  .brandmark .wm{font-weight:800;font-size:18px;letter-spacing:-.02em}
+  .brandmark .wm span{color:var(--accent)}
+  .chip{display:inline-flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--line);border-radius:var(--r-pill);padding:7px 12px;font-size:12px;color:var(--text);cursor:pointer;font-family:var(--font)}
+  .chip.on{border-color:var(--accent);color:var(--accent);background:var(--accent-soft);box-shadow:var(--glow)}
+  .chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+  .setrow{display:flex;align-items:center;justify-content:space-between;padding:15px 0;border-bottom:1px solid var(--line);gap:12px}
+  .setrow:last-child{border-bottom:none}
+  .setrow .t{font-weight:600;font-size:14px}
+  .setrow .m{color:var(--muted);font-size:12px;margin-top:2px}
+  .sw{width:46px;height:28px;border-radius:var(--r-pill);background:var(--surface2);border:1px solid var(--line);position:relative;flex:none;cursor:pointer;transition:background .2s}
+  .sw::after{content:"";position:absolute;top:2px;left:2px;width:22px;height:22px;border-radius:50%;background:var(--text);opacity:.5;transition:.2s}
+  .sw.on{background:var(--accent);border-color:var(--accent)}
+  .sw.on::after{left:20px;background:var(--accent-ink);opacity:1}
+  .themegrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
+  .tcard{border:1.5px solid var(--line);border-radius:var(--r-md);padding:12px;cursor:pointer;background:var(--surface);position:relative;overflow:hidden}
+  .tcard.sel{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft),var(--glow)}
+  .tcard .nm{font-size:13px;font-weight:600;margin-top:10px}
+  .tcard .dm{font-size:11px;color:var(--muted);margin-top:2px}
+  .swatch{display:flex;gap:6px}
+  .swatch span{width:20px;height:20px;border-radius:6px;border:1px solid rgba(128,128,128,.25)}
+  .tcard .tick{position:absolute;top:10px;right:10px;width:18px;height:18px;border-radius:50%;background:var(--accent);color:var(--accent-ink);font-size:11px;display:none;place-items:center;font-weight:800}
+  .tcard.sel .tick{display:grid}
+  .ctrl{position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:50;display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:center;max-width:96vw;background:#15181e;border:1px solid #2a2f38;border-radius:999px;padding:8px 12px;box-shadow:0 12px 30px -12px rgba(0,0,0,.8)}
+  .ctrl span{color:#9aa2b1;font-size:11px;letter-spacing:.1em;text-transform:uppercase;margin:0 4px}
+  .ctrl button{background:#232832;color:#e7eaf0;border:1px solid #333a46;border-radius:999px;padding:6px 11px;font-size:12px;cursor:pointer;font-family:var(--font)}
+  .ctrl button.on{background:#e7eaf0;color:#0e1116;border-color:#e7eaf0}
+  .bodywrap{margin-top:96px}
+
+  /* splits */
+  .split{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--line)}
+  .split:last-child{border-bottom:none}
+  .split .km{width:40px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--muted);font-size:12px}
+  .split .bar{flex:1;height:8px;border-radius:99px;background:var(--surface2);overflow:hidden}
+  .split .bar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--accent),var(--accent2))}
+  .split .pc{width:52px;text-align:right;font-size:12px;font-variant-numeric:tabular-nums}
+  .prog{height:10px;border-radius:99px;background:var(--surface2);overflow:hidden;border:1px solid var(--line)}
+  .prog i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2))}
+
+  /* HR / zona */
+  .hrk{display:flex;align-items:center;gap:12px;background:var(--surface2);border:1px solid var(--line);border-radius:var(--r-md);padding:14px}
+  .hrk .bpm{font-size:30px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+  .hrk .lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.14em}
+  .heart{width:26px;height:26px;stroke:#ef4444;fill:none;stroke-width:2;flex:none;animation:beat 1.1s ease-in-out infinite}
+  @keyframes beat{0%,100%{transform:scale(1)}25%{transform:scale(1.18)}40%{transform:scale(1)}60%{transform:scale(1.12)}}
+  @media (prefers-reduced-motion:reduce){.heart{animation:none}}
+  .zbar{display:flex;height:12px;border-radius:99px;overflow:hidden;border:1px solid var(--line)}
+  .zbar i{flex:1}
+  .zbar i:nth-child(1){background:#94a3b8}
+  .zbar i:nth-child(2){background:#38bdf8}
+  .zbar i:nth-child(3){background:#34d399}
+  .zbar i:nth-child(4){background:#fbbf24}
+  .zbar i:nth-child(5){background:#ef4444}
+  .zrow{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:6px;letter-spacing:.04em}
+  .hrchart{height:70px;border-radius:var(--r-md);border:1px solid var(--line);background:var(--surface2);position:relative;overflow:hidden;margin-top:8px}
+  .hrchart svg{position:absolute;inset:0;width:100%;height:100%}
+</style>
+</head>
+<body>
+
+<div class="ctrl">
+  <span>Mode</span>
+  <button id="mLight" onclick="setMode('light')">Light</button>
+  <button id="mDark" onclick="setMode('dark')">Dark</button>
+  <span>Tema</span>
+  <button data-th="pixel" onclick="setTheme('pixel')">Pixel</button>
+  <button data-th="emerald" onclick="setTheme('emerald')">Emerald</button>
+  <button data-th="midnight" onclick="setTheme('midnight')">Midnight</button>
+  <button data-th="sunset" onclick="setTheme('sunset')">Sunset</button>
+  <button data-th="mono" onclick="setTheme('mono')">Mono</button>
+  <button data-th="neon" onclick="setTheme('neon')">Neon</button>
+  <button data-th="aurora" onclick="setTheme('aurora')">Aurora</button>
+  <button data-th="carbon" onclick="setTheme('carbon')">Carbon</button>
+  <button data-th="sakura" onclick="setTheme('sakura')">Sakura</button>
+</div>
+
+<div class="bodywrap"></div>
+
+<div id="phones" style="display:flex;justify-content:center;gap:26px;flex-wrap:wrap">
+
+<!-- ===== SCREEN 0: DETAIL AKTIVITAS / SHARE (setelah lari) ===== -->
+<div class="phone">
+  <div class="statusbar"><span>9:41</span><span class="brand"><svg viewBox="0 0 24 24"><circle cx="13" cy="5" r="2.2" fill="var(--accent)" stroke="none"/><path d="M6 21l3-6.5 3 2 1 4.5M9 14.5l-4-1.5 3-4 4 1 2 3 4 1" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg><b>runku</b> &middot; offline</span></div>
+  <div class="screen">
+    <div class="row">
+      <div>
+        <div class="label">Selesai · 29 Okt</div>
+        <h1>Lari sore</h1>
+      </div>
+      <div class="chip on">Baru</div>
+    </div>
+
+    <!-- share card -->
+    <div class="card" id="shareCard" style="margin-top:14px;padding:0;overflow:hidden;border-radius:var(--r-md)">
+      <div class="map canvas" style="height:200px;border-radius:0;border-left:0;border-right:0;border-top:0">
+        <svg viewBox="0 0 300 200" preserveAspectRatio="none">
+          <path d="M20,160 C70,130 90,70 150,55 C210,40 250,80 285,70" fill="none" stroke="var(--accent)" stroke-width="4" stroke-linecap="round"/>
+          <path d="M20,160 C70,130 90,70 150,55 C210,40 250,80 285,70" fill="none" stroke="var(--accent2)" stroke-width="1.5" stroke-linecap="round" opacity=".5" transform="translate(3,3)"/>
+        </svg>
+        <div class="tag">runku · Magelang</div>
+        <div class="dot"></div>
+      </div>
+      <div style="padding:16px">
+        <div class="metric" style="font-size:42px">5.20<small>km</small></div>
+        <div class="statgrid" style="margin-top:14px;grid-template-columns:1fr 1fr 1fr;gap:8px">
+          <div class="stat" style="padding:10px"><div class="k" style="margin-bottom:4px">Pace</div><div class="v" style="font-size:15px">6'12"</div></div>
+          <div class="stat" style="padding:10px"><div class="k" style="margin-bottom:4px">Waktu</div><div class="v" style="font-size:15px">32:16</div></div>
+          <div class="stat" style="padding:10px"><div class="k" style="margin-bottom:4px">Elevasi</div><div class="v" style="font-size:15px">+42m</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row" style="margin-top:14px;gap:10px">
+      <button class="kick" style="margin-top:0;flex:1;padding:14px" onclick="flash(this)">Bagikan</button>
+      <button class="kick ghost" style="margin-top:0;flex:1;padding:14px" onclick="flash(this)">Simpan Gambar</button>
+    </div>
+
+    <div class="label" style="margin-top:22px">Detak jantung</div>
+    <div class="card" style="margin-top:10px">
+      <div class="row">
+        <div><div class="lbl" style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.14em">Rata²</div><div class="bpm" style="font-size:26px">148</div></div>
+        <div style="text-align:right"><div class="lbl" style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.14em">Maks</div><div class="bpm" style="font-size:26px;color:#ef4444">171</div></div>
+      </div>
+      <div class="hrchart">
+        <svg viewBox="0 0 300 70" preserveAspectRatio="none">
+          <polyline points="0,50 25,44 50,48 75,30 100,36 125,22 150,28 175,18 200,30 225,26 250,34 275,40 300,46" fill="none" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="zbar" style="margin-top:12px"><i style="opacity:1;flex:1"></i><i style="opacity:1;flex:2"></i><i style="opacity:1;flex:3"></i><i style="opacity:1;flex:2"></i><i style="opacity:.4;flex:1"></i></div>
+      <div class="zrow"><span>Z1 4:10</span><span>Z2 8:02</span><span>Z3 13:30</span><span>Z4 5:20</span><span>Z5 1:12</span></div>
+    </div>
+
+    <div class="label" style="margin-top:22px">Unduh / ekspor</div>
+    <div class="card" style="margin-top:10px">
+      <div class="setrow"><div><div class="t">GPX</div><div class="m">Rekam jejak GPS · buat app lain</div></div><div class="chip on" onclick="flash(this)">Unduh</div></div>
+      <div class="setrow"><div><div class="t">JSON</div><div class="m">Semua data mentah (splits, detak)</div></div><div class="chip" onclick="flash(this)">Unduh</div></div>
+      <div class="setrow"><div><div class="t">CSV</div><div class="m">Delimited · buat Excel/Sheets</div></div><div class="chip" onclick="flash(this)">Unduh</div></div>
+    </div>
+
+    <div class="grid" style="grid-template-columns:1fr 1fr;margin-top:14px;gap:10px">
+      <div class="chip" style="justify-content:center;padding:12px">Samarkan area</div>
+      <div class="chip" style="justify-content:center;padding:12px">Ubah nama</div>
+    </div>
+  </div>
+  <div class="tabs">
+    <div class="tab on"><svg viewBox="0 0 24 24"><path d="M4 13h4v7H4zM10 8h4v12h-4zM16 4h4v16h-4z"/></svg>Detail</div>
+    <div class="tab"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg>Split</div>
+    <div class="tab"><svg viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>Bagikan</div>
+  </div>
+</div>
+
+<!-- ===== SCREEN 1: BERANDA (canvas default) ===== -->
+<div class="phone">
+  <div class="statusbar"><span>9:41</span><span class="brand"><svg viewBox="0 0 24 24"><circle cx="13" cy="5" r="2.2" fill="var(--accent)" stroke="none"/><path d="M6 21l3-6.5 3 2 1 4.5M9 14.5l-4-1.5 3-4 4 1 2 3 4 1" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg><b>runku</b> &middot; offline</span></div>
+  <div class="screen">
+    <div class="row">
+      <div>
+        <div class="label">Kota aktif</div>
+        <h1>Magelang</h1>
+      </div>
+      <div class="chip" onclick="toggleMapMode()" id="mapToggle">Mode: Canvas</div>
+    </div>
+
+    <div class="map canvas" id="mainMap" style="margin-top:16px">
+      <svg viewBox="0 0 300 190" preserveAspectRatio="none">
+        <path d="M20,150 C70,120 90,60 150,45 C210,30 250,70 285,60" fill="none" stroke="var(--accent)" stroke-width="3" stroke-linecap="round"/>
+      </svg>
+      <div class="pill" id="mapPill">Canvas · tanpa peta</div>
+      <div class="tag" id="mapTag">Belum unduh peta kota</div>
+      <div class="dot"></div>
+    </div>
+
+    <div class="card" style="margin-top:12px">
+      <div class="row">
+        <div>
+          <div class="t" style="font-weight:600">Peta kota belum diunduh</div>
+          <div class="m sub">Rute tetap terekam (canvas). Unduh peta biar ada basemap.</div>
+        </div>
+        <div class="chip on">Unduh</div>
+      </div>
+    </div>
+
+    <button class="kick" style="margin-top:16px">Mulai Lari</button>
+
+    <div class="statgrid" style="margin-top:16px">
+      <div class="stat"><div class="k">Terakhir</div><div class="v">5.2<small style="font-size:12px"> km</small></div></div>
+      <div class="stat"><div class="k">Pace rata²</div><div class="v">6'12"</div></div>
+    </div>
+  </div>
+  <div class="tabs">
+    <div class="tab on"><svg viewBox="0 0 24 24"><path d="M3 11l9-7 9 7M5 10v10h14V10"/></svg>Beranda</div>
+    <div class="tab"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></svg>Target</div>
+    <div class="tab"><svg viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-11a7 7 0 0114 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>Peta</div>
+    <div class="tab"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></svg>Atur</div>
+  </div>
+</div>
+
+<!-- ===== SCREEN 2: LIVE RUN ===== -->
+<div class="phone">
+  <div class="statusbar"><span>9:41</span><span>GPS · kuat</span></div>
+  <div class="screen" style="padding-bottom:18px">
+    <div class="row">
+      <div class="chip on">● Live</div>
+      <div class="chip">Offline OK</div>
+    </div>
+    <div style="text-align:center;margin-top:20px">
+      <div class="label">Jarak</div>
+      <div class="metric" style="font-size:60px;margin-top:6px">3.82<small>km</small></div>
+      <div class="sub" style="margin-top:4px">Target 5.00 km · 76%</div>
+    </div>
+    <div class="prog" style="margin-top:10px"><i style="width:76%"></i></div>
+    <div class="statgrid" style="margin-top:18px">
+      <div class="stat"><div class="k">Durasi</div><div class="v">23:41</div></div>
+      <div class="stat"><div class="k">Pace</div><div class="v">6'06"</div></div>
+      <div class="stat"><div class="k">Kecepatan</div><div class="v">9.8<small style="font-size:12px"> km/h</small></div></div>
+      <div class="stat"><div class="k">Elevasi</div><div class="v">+42<small style="font-size:12px"> m</small></div></div>
+    </div>
+
+    <div class="hrk" style="margin-top:12px">
+      <svg class="heart" viewBox="0 0 24 24"><path d="M12 21s-7-4.6-9.2-9.1C1.2 8.5 3 5 6.4 5c2 0 3.2 1.1 4 2.3C11.2 6.1 12.4 5 14.4 5 17.8 5 19.6 8.5 18 11.9 15.8 16.4 12 21 12 21z"/></svg>
+      <div style="flex:1">
+        <div class="lbl">Detak jantung · Zona 3</div>
+        <div class="bpm">142 <small style="font-size:13px;color:var(--muted)">bpm</small></div>
+      </div>
+      <div class="chip on" style="font-size:11px">Strap BLE</div>
+    </div>
+    <div class="zbar" style="margin-top:10px"><i></i><i></i><i style="opacity:1"></i><i></i><i></i></div>
+    <div class="zrow"><span>Z1</span><span>Z2</span><span>Z3</span><span>Z4</span><span>Z5</span></div>
+    <div class="map canvas" style="height:150px;margin-top:16px">
+      <svg viewBox="0 0 300 170" preserveAspectRatio="none">
+        <path d="M15,140 C60,130 70,80 120,70 C170,60 190,100 240,60 C265,40 280,45 292,38" fill="none" stroke="var(--accent)" stroke-width="4" stroke-linecap="round"/>
+      </svg>
+      <div class="pill">Rute · dari GPS</div>
+      <div class="dot" style="left:80%;top:38%"></div>
+    </div>
+    <div class="row" style="margin-top:14px;gap:10px">
+      <button class="kick ghost" style="margin-top:0;flex:1;padding:14px">Jeda</button>
+      <button class="kick stop" style="margin-top:0;flex:1;padding:14px">Stop</button>
+    </div>
+  </div>
+  <div class="tabs">
+    <div class="tab on"><svg viewBox="0 0 24 24"><circle cx="13" cy="4" r="2"/><path d="M6 22l3-7 3 2 1 5M9 15l-4-2 3-4 4 1 2 3 4 1"/></svg>Lari</div>
+    <div class="tab"><svg viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-11a7 7 0 0114 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>Peta</div>
+    <div class="tab"><svg viewBox="0 0 24 24"><path d="M3 12h4l2-6 3 14 2-8h4"/></svg>Zona</div>
+  </div>
+</div>
+
+<!-- ===== SCREEN 3: TARGET (ala Strava) ===== -->
+<div class="phone">
+  <div class="statusbar"><span>9:41</span><span class="brand"><svg viewBox="0 0 24 24"><circle cx="13" cy="5" r="2.2" fill="var(--accent)" stroke="none"/><path d="M6 21l3-6.5 3 2 1 4.5M9 14.5l-4-1.5 3-4 4 1 2 3 4 1" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg><b>runku</b> &middot; offline</span></div>
+  <div class="screen">
+    <div class="label">Sesi lari</div>
+    <h1 style="margin-bottom:6px">Target</h1>
+    <div class="sub">Pilih mau lari berapa km / pace berapa / berapa lama.</div>
+
+    <div class="chips" style="margin-top:14px">
+      <div class="chip on">Jarak</div>
+      <div class="chip">Pace</div>
+      <div class="chip">Durasi</div>
+      <div class="chip">Bebas</div>
+    </div>
+
+    <div class="grid" style="margin-top:16px">
+      <div class="statgrid">
+        <div class="stat"><div class="k">Target jarak</div><div class="v">5.00<small style="font-size:12px"> km</small></div></div>
+        <div class="stat"><div class="k">Target pace</div><div class="v">6'00"</div></div>
+      </div>
+      <div class="row" style="gap:10px">
+        <div class="chip on" style="flex:1;justify-content:center">Tercapai 76%</div>
+        <div class="chip" style="flex:1;justify-content:center">∇ -0'12"</div>
+      </div>
+    </div>
+
+    <div class="label" style="margin-top:22px">Split per km</div>
+    <div class="card" style="margin-top:10px">
+      <div class="split"><span class="km">1 km</span><span class="bar"><i style="width:88%"></i></span><span class="pc">5'48"</span></div>
+      <div class="split"><span class="km">2 km</span><span class="bar"><i style="width:78%"></i></span><span class="pc">6'03"</span></div>
+      <div class="split"><span class="km">3 km</span><span class="bar"><i style="width:70%"></i></span><span class="pc">6'19"</span></div>
+      <div class="split"><span class="km">3.8</span><span class="bar"><i style="width:64%"></i></span><span class="pc">6'06"</span></div>
+    </div>
+
+    <div class="label" style="margin-top:22px">Pencapaian</div>
+    <div class="grid" style="grid-template-columns:1fr 1fr 1fr;margin-top:10px">
+      <div class="stat" style="text-align:center"><div class="v" style="font-size:20px">🏅</div><div class="k" style="margin:4px 0 0">5K</div></div>
+      <div class="stat" style="text-align:center"><div class="v" style="font-size:20px">🔥</div><div class="k" style="margin:4px 0 0">4 hari</div></div>
+      <div class="stat" style="text-align:center"><div class="v" style="font-size:20px">⚡</div><div class="k" style="margin:4px 0 0">Tercepat</div></div>
+    </div>
+
+    <button class="kick" style="margin-top:18px">Mulai dengan Target</button>
+  </div>
+  <div class="tabs">
+    <div class="tab"><svg viewBox="0 0 24 24"><path d="M3 11l9-7 9 7M5 10v10h14V10"/></svg>Beranda</div>
+    <div class="tab on"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></svg>Target</div>
+    <div class="tab"><svg viewBox="0 0 24 24"><path d="M4 4v16h16" stroke-linecap="round"/><path d="M7 14l3-3 3 2 4-6"/></svg>Riwayat</div>
+    <div class="tab"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></svg>Atur</div>
+  </div>
+</div>
+
+<!-- ===== SCREEN 4: PENGATURAN + TEMA ===== -->
+<div class="phone">
+  <div class="statusbar"><span>9:41</span><span class="brand"><svg viewBox="0 0 24 24"><circle cx="13" cy="5" r="2.2" fill="var(--accent)" stroke="none"/><path d="M6 21l3-6.5 3 2 1 4.5M9 14.5l-4-1.5 3-4 4 1 2 3 4 1" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg><b>runku</b> &middot; offline</span></div>
+  <div class="screen">
+    <div class="label">Pengaturan</div>
+    <h1 style="margin-bottom:14px">Tampilan</h1>
+
+    <div class="setrow">
+      <div><div class="t">Mode gelap</div><div class="m sub">Ikut sistem atau manual</div></div>
+      <div class="sw" id="mSetSw" onclick="toggleDark()"></div>
+    </div>
+
+    <div class="label" style="margin-top:22px">Pilih tema</div>
+    <div class="themegrid" id="themegrid">
+      <div class="tcard" data-th="pixel" onclick="setTheme('pixel')"><div class="tick">✓</div><div class="swatch"><span style="background:#4f7dfb"></span><span style="background:#9d7bff"></span><span style="background:#12151b"></span></div><div class="nm">Pixel</div><div class="dm">Material You</div></div>
+      <div class="tcard" data-th="emerald" onclick="setTheme('emerald')"><div class="tick">✓</div><div class="swatch"><span style="background:#34d399"></span><span style="background:#22d3ee"></span><span style="background:#0b0d10"></span></div><div class="nm">Emerald</div><div class="dm">Sporty</div></div>
+      <div class="tcard" data-th="midnight" onclick="setTheme('midnight')"><div class="tick">✓</div><div class="swatch"><span style="background:#60a5fa"></span><span style="background:#a78bfa"></span><span style="background:#080c13"></span></div><div class="nm">Midnight</div><div class="dm">Biru gelap</div></div>
+      <div class="tcard" data-th="sunset" onclick="setTheme('sunset')"><div class="tick">✓</div><div class="swatch"><span style="background:#f2705a"></span><span style="background:#fbbf24"></span><span style="background:#120d0c"></span></div><div class="nm">Sunset</div><div class="dm">Oranye</div></div>
+      <div class="tcard" data-th="neon" onclick="setTheme('neon')"><div class="tick">✓</div><div class="swatch"><span style="background:#22d3ee"></span><span style="background:#f0abfc"></span><span style="background:#05060c"></span></div><div class="nm">Neon</div><div class="dm">Cyberpunk</div></div>
+      <div class="tcard" data-th="aurora" onclick="setTheme('aurora')"><div class="tick">✓</div><div class="swatch"><span style="background:#5eead4"></span><span style="background:#a78bfa"></span><span style="background:#060a12"></span></div><div class="nm">Aurora</div><div class="dm">Gradien utara</div></div>
+      <div class="tcard" data-th="carbon" onclick="setTheme('carbon')"><div class="tick">✓</div><div class="swatch"><span style="background:#f43f5e"></span><span style="background:#fbbf24"></span><span style="background:#0a0a0b"></span></div><div class="nm">Carbon</div><div class="dm">Racing</div></div>
+      <div class="tcard" data-th="sakura" onclick="setTheme('sakura')"><div class="tick">✓</div><div class="swatch"><span style="background:#f472b6"></span><span style="background:#c084fc"></span><span style="background:#130a10"></span></div><div class="nm">Sakura</div><div class="dm">Soft pink</div></div>
+      <div class="tcard" data-th="mono" onclick="setTheme('mono')"><div class="tick">✓</div><div class="swatch"><span style="background:#18181b"></span><span style="background:#e9e9e9"></span><span style="background:#fff"></span></div><div class="nm">Mono</div><div class="dm">Hitam-putih</div></div>
+    </div>
+
+    <div class="label" style="margin-top:22px">Peta</div>
+    <div class="card" style="margin-top:10px">
+      <div class="setrow"><div><div class="t">Mode peta</div><div class="m" id="mapModeText">Canvas (default · ringan)</div></div><div class="chip on" onclick="toggleMapMode()">Ganti</div></div>
+      <div class="setrow"><div><div class="t">Unduh peta kota</div><div class="m">MBTiles per-kota Indonesia</div></div><div class="chip">Kelola</div></div>
+    </div>
+
+    <div class="label" style="margin-top:22px">Sensor detak jantung</div>
+    <div class="card" style="margin-top:10px">
+      <div class="setrow"><div><div class="t">Sumber HR</div><div class="m" id="hrSrcText">Strap Bluetooth (BLE)</div></div><div class="chip on" onclick="cycleHR()">Ganti</div></div>
+      <div class="setrow"><div><div class="t">Status koneksi</div><div class="m">Polar H10 · tersambung</div></div><div class="chip">●●●</div></div>
+    </div>
+
+    <div class="label" style="margin-top:22px">Lainnya</div>
+    <div class="card" style="margin-top:10px">
+      <div class="setrow"><div><div class="t">Satuan</div><div class="m">km · km/h</div></div><div class="chip">Ubah</div></div>
+      <div class="setrow"><div><div class="t">Ekspor data</div><div class="m">GPX / JSON / CSV</div></div><div class="chip">Ekspor</div></div>
+    </div>
+  </div>
+  <div class="tabs">
+    <div class="tab"><svg viewBox="0 0 24 24"><path d="M3 11l9-7 9 7M5 10v10h14V10"/></svg>Beranda</div>
+    <div class="tab"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></svg>Target</div>
+    <div class="tab"><svg viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-11a7 7 0 0114 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>Peta</div>
+    <div class="tab on"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></svg>Atur</div>
+  </div>
+</div>
+
+</div>
+
+<script>
+  var root=document.documentElement;
+  var state={theme:'pixel', mode:'light', mapMode:'canvas'}; // canvas default
+
+  function apply(){
+    root.setAttribute('data-theme',state.theme);
+    root.setAttribute('data-mode',state.mode);
+    document.getElementById('mLight').classList.toggle('on',state.mode==='light');
+    document.getElementById('mDark').classList.toggle('on',state.mode==='dark');
+    document.querySelectorAll('.ctrl [data-th]').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-th')===state.theme)});
+    document.querySelectorAll('#themegrid .tcard').forEach(function(c){c.classList.toggle('sel',c.getAttribute('data-th')===state.theme)});
+    var sw=document.getElementById('mSetSw'); if(sw) sw.classList.toggle('on',state.mode==='dark');
+
+    // map mode UI
+    var isTiles = state.mapMode==='tiles';
+    var m=document.getElementById('mainMap');
+    if(m) m.className='map '+(isTiles?'tiles':'canvas');
+    var t=document.getElementById('mapToggle'); if(t) t.textContent='Mode: '+(isTiles?'Peta':'Canvas');
+    var p=document.getElementById('mapPill'); if(p) p.textContent=isTiles?'mbTiles · zoom 15 · 84 MB':'Canvas · tanpa peta';
+    var tg=document.getElementById('mapTag'); if(tg) tg.textContent=isTiles?'Peta kota tersimpan':'Belum unduh peta kota';
+    var mm=document.getElementById('mapModeText'); if(mm) mm.textContent=isTiles?'Peta kota (MBTiles)':'Canvas (default · ringan)';
+  }
+  function setTheme(t){state.theme=t;apply()}
+  function setMode(m){state.mode=m;apply()}
+  function toggleDark(){state.mode=state.mode==='dark'?'light':'dark';apply()}
+  function toggleMapMode(){state.mapMode=state.mapMode==='canvas'?'tiles':'canvas';apply()}
+  function flash(el){el.style.transition='transform .08s';el.style.transform='scale(.94)';setTimeout(function(){el.style.transform=''},110)}
+  var hrOptions=['Strap Bluetooth (BLE)','Kamera HP (jari)','Mati'];
+  var hrIdx=0;
+  function cycleHR(){hrIdx=(hrIdx+1)%hrOptions.length;var e=document.getElementById('hrSrcText');if(e)e.textContent=hrOptions[hrIdx];}
+
+  state.mode=(window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light';
+  apply();
+</script>
+</body>
+</html>
