@@ -22,6 +22,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.clickable
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -58,6 +61,7 @@ fun HomeScreen(vm: RunkuViewModel, nav: NavController) {
             Modifier
                 .fillMaxSize()
                 .padding(pad)
+                .verticalScroll(rememberScrollState())
                 .padding(horizontal = 18.dp)
                 .padding(top = 8.dp),
         ) {
@@ -84,16 +88,11 @@ fun HomeScreen(vm: RunkuViewModel, nav: NavController) {
             // map / canvas
             RunkuCard(Modifier.fillMaxWidth().height(190.dp)) {
                 Box(Modifier.fillMaxSize()) {
-                    CanvasRouteMap(
-                        points = emptyList(),
-                        colors = c,
-                        modifier = Modifier.fillMaxSize(),
-                        showGrid = true,
-                    )
+                    com.void200.runku.map.RouteMap(emptyList(), Modifier.fillMaxSize(), forceCanvas = !mapIsTiles)
                     Chip(
                         if (pack != null) "${pack.name} · ${pack.sizeLabel()}" else "Canvas · tanpa peta",
                         selected = pack != null,
-                        modifier = Modifier.align(Alignment.TopStart),
+                        modifier = Modifier.align(Alignment.BottomStart),
                     )
                 }
             }
@@ -155,6 +154,33 @@ fun HomeScreen(vm: RunkuViewModel, nav: NavController) {
                     "Pace rata²" to (last?.let { Geo.formatPace(it.avgPaceSecPerKm) } ?: "—'—\""),
                 ),
             )
+            Spacer(Modifier.height(20.dp))
+            Label("Minggu ini")
+            val weekStart = java.util.Calendar.getInstance().apply {
+                set(java.util.Calendar.DAY_OF_WEEK, firstDayOfWeek)
+                set(java.util.Calendar.HOUR_OF_DAY, 0); set(java.util.Calendar.MINUTE, 0)
+                set(java.util.Calendar.SECOND, 0); set(java.util.Calendar.MILLISECOND, 0)
+            }.timeInMillis
+            val weekly = activities.filter { it.startTime >= weekStart && it.completed }
+            Spacer(Modifier.height(10.dp))
+            StatGrid(listOf("Total jarak" to "${Geo.formatDistance(weekly.sumOf { it.distanceMeters })} km",
+                "Aktivitas" to "${weekly.size} lari"))
+            Spacer(Modifier.height(20.dp))
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Label("Aktivitas terakhir")
+                Chip("Lihat semua", onClick = { nav.navigate("history") })
+            }
+            activities.take(3).forEach { a ->
+                Spacer(Modifier.height(10.dp))
+                RunkuCard(Modifier.fillMaxWidth().clickable { nav.navigate("detail/${a.id}") }) {
+                    Column {
+                        Text(a.name, color = c.text, fontWeight = FontWeight.SemiBold)
+                        Text("${Geo.formatDistance(a.distanceMeters)} km · ${Geo.formatDuration(a.durationMillis)} · ${Geo.formatPace(a.avgPaceSecPerKm)}/km", color = c.muted, fontSize = 12.sp)
+                    }
+                }
+            }
+            if (activities.isEmpty()) Text("Lari pertamamu akan tersimpan di sini. Mulai sesi saat GPS siap.", color = c.muted, fontSize = 13.sp)
+            Spacer(Modifier.height(24.dp))
         }
     }
 }

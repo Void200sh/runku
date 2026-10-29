@@ -15,6 +15,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -38,6 +39,7 @@ fun MapsScreen(nav: NavController) {
     val c = MaterialTheme.runku
     val context = LocalContext.current
     val store = remember { OfflineMapStore(context) }
+    val statuses by MapCatalog.status.collectAsState()
     var installed by remember { mutableStateOf(store.available().map { it.name.lowercase() }.toSet()) }
 
     Scaffold(
@@ -71,18 +73,20 @@ fun MapsScreen(nav: NavController) {
             }
 
             items(MapCatalog.regions) { region ->
-                val on = installed.contains(region.id)
+                val message = statuses[region.id]
+                val on = remember(message) { MapCatalog.installed(context, region) }
                 RunkuCard(Modifier.fillMaxWidth()) {
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) {
                             Text(region.city, fontWeight = FontWeight.SemiBold, color = c.text)
                             Spacer(Modifier.height(2.dp))
-                            Text("${region.province} · ${region.sizeLabel} · z${region.zoom}", fontSize = 12.sp, color = c.muted)
+                            Text(region.province, fontSize = 12.sp, color = c.muted)
+                            Text(message ?: if (on) "Siap offline" else "Data jalan OSM · ukuran diketahui setelah unduh", fontSize = 12.sp, color = c.muted)
                         }
                         if (on) {
                             Chip("Tersimpan", selected = true)
                         } else {
-                            Chip("Unduh", selected = true, onClick = {
+                            Chip(if (message?.startsWith("Mengunduh") == true) "Proses…" else "Unduh", selected = true, onClick = {
                                 runCatching {
                                     MapCatalog.download(context, region)
                                     Toast.makeText(context, "Mengunduh ${region.city}…", Toast.LENGTH_SHORT).show()
@@ -96,6 +100,9 @@ fun MapsScreen(nav: NavController) {
             }
 
             item {
+                Text("Paket tersimpan di HP:", color = c.text, fontSize = 13.sp)
+                Text(store.mapsDir().absolutePath, color = c.muted, fontSize = 11.sp)
+                Text("Basemap jalan sederhana, bukan peta satelit. Unduhan butuh internet sekali; sesudah siap dapat dipakai offline. © OpenStreetMap contributors, ODbL.", color = c.muted, fontSize = 12.sp)
                 Spacer(Modifier.height(6.dp))
                 Chip("Muat ulang", selected = true, onClick = {
                     store.refresh()

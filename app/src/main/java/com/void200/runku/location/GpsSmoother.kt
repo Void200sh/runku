@@ -1,96 +1,94 @@
 package com.void200.runku.location
 
-import kotlin.math.abs
-import kotlin.math.max
-import kotlin.math.min
-
 /**
- * GPS stabilizer: rejects jitter, smooths the route, and keeps pace stable.
+ * Movement gate: never append stationary fixes to the route.
  *
- * Real-world phone GPS drifts several metres even standing still. Raw samples
- * drawn directly produce a scribbled line and wildly oscillating pace. This
- * filter:
- *   - drops fixes with poor accuracy (> MAX_ACCURACY)
- *   - drops fixes that jump further than physically plausible (> MAX_SPEED)
- *   - requires a minimum displacement before counting distance (MIN_MOVE)
- *   - smooths coordinates with an exponential moving average
- *   - smooths speed/pace over a sliding window
+ * Problem being solved: a phone sitting still still reports "moving" fixes
+ * because GNSS positions wander several metres inside the accuracy circle.
+ * Drawing those produces a scribbled line that grows with no real movement.
+ *
+ * Strategy:
+ *  - Reject invalid / low-accuracy fixes.
+ *  - Keep a stable `anchor`. Movement is only recognised when the fix is a
+ *    clear, sustained step away from the anchor.
+ *  - A step counts only after several consecutive fixes agree on the same
+ *    direction of travel (guards against back-and-forth noise).
+ *  - Once accepted, the anchor advances and the accepted point is emitted.
+ *  - Falling back inside the movement threshold resets the streak, so jitter
+ *    around a single spot never accumulates distance.
  */
 class GpsSmoother {
 
-    companion object {
-        const val MAX_ACCURACY = 30f       // metres — ignore worse fixes
-        const val MIN_MOVE = 3.0           // metres — below this = jitter
-        const val MAX_SPEED_MPS = 12.0     // 43 km/h — implausible on foot
-        const val ALPHA = 0.35             // EMA factor (0..1) for position
-    }
+    private var anchor: LocationSample? = null
+    private var previous: LocationSample? = null
+    private var streak = 0
+    private var streakLat = 0.0
+    private var streakLon = 0.0
 
-    private var lastAccepted: LocationSample? = null
-    private var smoothLat = 0.0
-    private var smoothLon = 0.0
-    private var hasSmooth = false
-
-    private val speedWindow = ArrayDeque<Double>()
-
-    data class Result(
-        val accepted: LocationSample,   // smoothed point to draw/store
-        val addedDistance: Double,      // metres to add to total (0 if jitter)
-        val stableSpeedMps: Double,     // smoothed speed
-    )
+    data class Result(val accepted: LocationSample, val addedDistance: Double, val stableSpeedMps: Double)
 
     fun reset() {
-        lastAccepted = null
-        hasSmooth = false
-        speedWindow.clear()
+        anchor = null
+        previous = null
+        streak = 0
     }
 
     fun process(sample: LocationSample, elapsedSec: Double): Result? {
-        // 1. accuracy gate
-        if (sample.accuracy > MAX_ACCURACY) return null
-        if (sample.lat == 0.0 && sample.lon == 0.0) return null
+        // --- validity gates ---
+        if (!sample.lat.isFinite() || !sample.lon.isFinite() ||
+            sample.lat !in -90.0..90.0 || sample.lon !in -180.0..180.0 ||
+            sample.accuracy <= 0f || sample.accuracy > 20f ||
+            (sample.lat == 0.0 && sample.lon == 0.0)
+        ) return null
 
-        val prev = lastAccepted
-        if (prev == null) {
-            lastAccepted = sample
-            smoothLat = sample.lat
-            smoothLon = sample.lon
-            hasSmooth = true
+        val prior = previous
+        if (prior != null && sample.timestamp <= prior.timestamp) return null
+        previous = sample
+
+        val anchor0 = anchor
+        if (anchor0 == null) {
+            // First fix: seed the anchor, emit nothing (no movement yet).
+            anchor = sample
+            streakLat = sample.lat
+            streakLon = sample.lon
+            streak = 1
             return Result(sample, 0.0, 0.0)
         }
 
-        val dt = ((sample.timestamp - prev.timestamp) / 1000.0).coerceAtLeast(0.5)
-        val rawDist = Geo.distance(prev.lat, prev.lon, sample.lat, sample.lon)
-        val impliedSpeed = rawDist / dt
+        val dt = (sample.timestamp - anchor0.timestamp) / 1000.0
+        if (dt <= 0) return null
 
-        // 2. implausible jump gate (teleport / bad fix)
-        if (impliedSpeed > MAX_SPEED_MPS && rawDist > 15.0) return null
+        val stepFromAnchor = Geo.distance(anchor0.lat, anchor0.lon, sample.lat, sample.lon)
+        val stepSpeed = stepFromAnchor / dt
 
-        // 3. jitter gate — distance only counts after MIN_MOVE
-        var added = 0.0
-        if (rawDist >= MIN_MOVE) added = rawDist
+        // Teleport / impossible speed: skip the sample without moving the anchor.
+        if (stepSpeed > 12.0 || sample.speedMps > 12f) { streak = 0; return null }
 
-        // 4. EMA smoothing of the drawn position
-        smoothLat = smoothLat * (1 - ALPHA) + sample.lat * ALPHA
-        smoothLon = smoothLon * (1 - ALPHA) + sample.lon * ALPHA
+        // A real step must clear the combined uncertainty of both fixes.
+        val threshold = maxOf(6.0, (anchor0.accuracy + sample.accuracy) * 0.6)
 
-        val smoothed = sample.copy(lat = smoothLat, lon = smoothLon)
+        if (stepFromAnchor < threshold) {
+            // We are (still) effectively at the anchor. Reset the movement streak
+            // so wandering noise cannot slowly accumulate into a fake move.
+            streak = 0
+            streakLat = anchor0.lat
+            streakLon = anchor0.lon
+            return null
+        }
 
-        // 5. speed smoothing over a ~5s window
-        speedWindow.addLast(if (impliedSpeed > MAX_SPEED_MPS) 0.0 else impliedSpeed)
-        if (speedWindow.size > 5) speedWindow.removeFirst()
-        val avgSpeed = if (speedWindow.isEmpty()) 0.0 else speedWindow.average()
+        // Distance from the previous accepted step direction: require consistency.
+        val sinceStreak = Geo.distance(streakLat, streakLon, sample.lat, sample.lon)
+        if (sinceStreak < threshold * 0.4) {
+            // Not enough forward progress since last streak point yet.
+            return null
+        }
 
-        // do not count a "move" while the window says we are stationary
-        if (avgSpeed < 0.4) added = 0.0
-
-        lastAccepted = sample
-        return Result(smoothed, added, avgSpeed)
-    }
-
-    /** Pace from smoothed totals, guarded against divide-by-tiny. */
-    fun stablePace(distanceMeters: Double, elapsedMillis: Long): Double {
-        if (distanceMeters < 20.0) return 0.0       // too early to be meaningful
-        if (elapsedMillis <= 0) return 0.0
-        return (elapsedMillis / 1000.0) / (distanceMeters / 1000.0)
+        // Confirmed sustained movement: accept, advance anchor, emit the point.
+        anchor = sample
+        streakLat = sample.lat
+        streakLon = sample.lon
+        streak = 0
+        val speed = if (sample.speedMps > 0.3f) sample.speedMps.toDouble() else stepSpeed
+        return Result(sample, stepFromAnchor, speed)
     }
 }

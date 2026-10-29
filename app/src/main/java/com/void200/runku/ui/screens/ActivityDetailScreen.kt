@@ -3,6 +3,9 @@ package com.void200.runku.ui.screens
 import android.content.Context
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.foundation.layout.Arrangement
@@ -33,6 +36,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -60,6 +65,13 @@ fun ActivityDetailScreen(vm: RunkuViewModel, id: Long, nav: NavController) {
     var activity by remember { mutableStateOf<Activity?>(null) }
     var points by remember { mutableStateOf<List<TrackPoint>>(emptyList()) }
     val allActivities by vm.activities.collectAsState()
+    val scroll = rememberScrollState()
+    val scope = rememberCoroutineScope()
+    var splitOffset by remember { mutableStateOf(0) }
+    var selectedTab by remember { mutableStateOf("Detail") }
+    var hiddenEnds by remember { mutableStateOf(false) }
+    var renameOpen by remember { mutableStateOf(false) }
+    var newName by remember { mutableStateOf("") }
 
     LaunchedEffect(id) {
         activity = vm.getActivity(id)
@@ -71,6 +83,31 @@ fun ActivityDetailScreen(vm: RunkuViewModel, id: Long, nav: NavController) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text("Memuat…", color = c.muted) }
         return
     }
+    val visiblePoints = if (hiddenEnds && points.size > 2) {
+        val first = points.first(); val last = points.last()
+        points.filter { Geo.distance(first.lat, first.lon, it.lat, it.lon) >= 200 &&
+            Geo.distance(last.lat, last.lon, it.lat, it.lon) >= 200 }
+    } else points
+    val share: () -> Unit = {
+        scope.launch {
+            runCatching {
+                val bitmap = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
+                    com.void200.runku.export.ShareCard.render(act, visiblePoints)
+                }
+                com.void200.runku.export.ShareCard.share(context, bitmap)
+                bitmap.recycle()
+            }.onFailure { android.widget.Toast.makeText(context, "Gagal membagikan: ${it.message}", android.widget.Toast.LENGTH_LONG).show() }
+        }
+    }
+    if (renameOpen) androidx.compose.material3.AlertDialog(
+        onDismissRequest = { renameOpen = false },
+        title = { Text("Ubah nama aktivitas") },
+        text = { androidx.compose.material3.OutlinedTextField(value = newName, onValueChange = { newName = it }, label = { Text("Nama") }) },
+        confirmButton = { androidx.compose.material3.TextButton(enabled = newName.isNotBlank(), onClick = {
+            scope.launch { vm.renameActivity(id, newName); activity = vm.getActivity(id); renameOpen = false }
+        }) { Text("Simpan") } },
+        dismissButton = { androidx.compose.material3.TextButton(onClick = { renameOpen = false }) { Text("Batal") } },
+    )
 
     val samples = points.map {
         LocationSample(it.lat, it.lon, it.elevation, it.speedMps, it.bearing, it.accuracy, it.timestamp)
@@ -79,14 +116,25 @@ fun ActivityDetailScreen(vm: RunkuViewModel, id: Long, nav: NavController) {
     Scaffold(
         containerColor = c.bg,
         bottomBar = {
-            DetailTabs(nav)
+            Column {
+                DetailTabs(selectedTab) { tab ->
+                    selectedTab = tab
+                    when (tab) {
+                        "Bagikan" -> share()
+                        "Split" -> scope.launch { scroll.animateScrollTo(splitOffset.coerceAtMost(scroll.maxValue)) }
+                        else -> scope.launch { scroll.animateScrollTo(0) }
+                    }
+                }
+                com.void200.runku.ui.components.RunkuBottomBar(com.void200.runku.ui.components.NavTab.HISTORY,
+                    onSelect = { tab -> nav.navigate(tab.route) { launchSingleTop = true } })
+            }
         },
     ) { pad ->
         Column(
             Modifier
                 .fillMaxSize()
                 .padding(pad)
-                .verticalScroll(rememberScrollState())
+                .verticalScroll(scroll)
                 .padding(horizontal = 18.dp)
                 .padding(top = 8.dp),
         ) {
@@ -120,15 +168,13 @@ fun ActivityDetailScreen(vm: RunkuViewModel, id: Long, nav: NavController) {
             Spacer(Modifier.height(14.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 Button(
-                    onClick = {
-                        Exporter.writeAndShare(context, "runku-${act.id}.gpx", Exporter.gpx(act, points))
-                    },
+                    onClick = share,
                     Modifier.weight(1f).height(52.dp), shape = RoundedCornerShape(999.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = c.accent, contentColor = c.accentInk),
                 ) { Text("Bagikan", fontWeight = FontWeight.Bold) }
                 Button(
                     onClick = {
-                        val bmp = com.void200.runku.export.ShareCard.render(act, points)
+                        val bmp = com.void200.runku.export.ShareCard.render(act, visiblePoints)
                         val ok = com.void200.runku.export.ShareCard.saveToGallery(context, bmp, "runku-${act.id}")
                         android.widget.Toast.makeText(
                             context,
@@ -176,7 +222,7 @@ fun ActivityDetailScreen(vm: RunkuViewModel, id: Long, nav: NavController) {
             val splits = com.void200.runku.data.Splits.from(points)
             if (splits.isNotEmpty()) {
                 Spacer(Modifier.height(20.dp))
-                Label("Split per km")
+                Label("Split per km", Modifier.onGloballyPositioned { splitOffset = it.positionInParent().y.toInt() })
                 Spacer(Modifier.height(10.dp))
                 RunkuCard(Modifier.fillMaxWidth()) {
                     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -212,6 +258,9 @@ fun ActivityDetailScreen(vm: RunkuViewModel, id: Long, nav: NavController) {
                         }
                     }
                 }
+            } else {
+                Label("Split per km", Modifier.onGloballyPositioned { splitOffset = it.positionInParent().y.toInt() })
+                Text("Belum ada split. Rekam rute dengan GPS yang stabil terlebih dahulu.", color = c.muted, fontSize = 13.sp)
             }
 
             // ---- badges ----
@@ -256,8 +305,8 @@ fun ActivityDetailScreen(vm: RunkuViewModel, id: Long, nav: NavController) {
 
             Spacer(Modifier.height(14.dp))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                Chip("Samarkan area", modifier = Modifier.weight(1f))
-                Chip("Ubah nama", modifier = Modifier.weight(1f))
+                Chip(if (hiddenEnds) "Area disamarkan" else "Samarkan area", selected = hiddenEnds, onClick = { hiddenEnds = !hiddenEnds }, modifier = Modifier.weight(1f))
+                Chip("Ubah nama", onClick = { newName = act.name; renameOpen = true }, modifier = Modifier.weight(1f))
             }
 
             Spacer(Modifier.height(24.dp))
@@ -266,15 +315,16 @@ fun ActivityDetailScreen(vm: RunkuViewModel, id: Long, nav: NavController) {
 }
 
 @Composable
-private fun DetailTabs(nav: NavController) {
+private fun DetailTabs(selected: String, onSelect: (String) -> Unit) {
     val c = MaterialTheme.runku
     Row(
         Modifier.fillMaxWidth().background(c.bg).padding(vertical = 8.dp),
         horizontalArrangement = Arrangement.SpaceEvenly,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        listOf("Detail" to true, "Split" to false, "Bagikan" to false).forEach { (label, on) ->
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        listOf("Detail", "Split", "Bagikan").forEach { label ->
+            val on = selected == label
+            Column(Modifier.clickable { onSelect(label) }.padding(8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                 Box(
                     Modifier
                         .size(23.dp)

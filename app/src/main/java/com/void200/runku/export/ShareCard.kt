@@ -22,6 +22,17 @@ import java.io.OutputStream
  * to the device gallery (Pictures/runku). Fully offline — pure Canvas drawing.
  */
 object ShareCard {
+    fun share(context: Context, bitmap: Bitmap) {
+        val folder = java.io.File(context.cacheDir, "exports").apply { mkdirs() }
+        val file = java.io.File(folder, "runku-${System.currentTimeMillis()}.jpg")
+        file.outputStream().use { bitmap.compress(Bitmap.CompressFormat.JPEG, 92, it) }
+        val uri = androidx.core.content.FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+        context.startActivity(android.content.Intent.createChooser(android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+            type = "image/jpeg"
+            putExtra(android.content.Intent.EXTRA_STREAM, uri)
+            addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }, "Bagikan hasil lari"))
+    }
 
     fun render(
         activity: Activity,

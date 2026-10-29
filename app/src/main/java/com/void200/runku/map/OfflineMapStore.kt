@@ -39,6 +39,14 @@ class OfflineMapStore(private val context: Context) {
     fun available(): List<OfflineMap> {
         cache?.let { return it }
         val dir = mapsDir()
+        val roads = dir.listFiles { f -> f.name.endsWith(".roads.json") }?.mapNotNull { f ->
+            runCatching {
+                val json = org.json.JSONObject(f.readText())
+                require(json.getJSONArray("elements").length() > 0)
+                val b = json.getString("bounds").split(',').map { it.toDouble() }
+                OfflineMap(json.getString("city"), f, f.length(), Bounds(b[0], b[1], b[2], b[3]))
+            }.getOrNull()
+        } ?: emptyList()
         val list = dir.listFiles { f -> f.extension.lowercase() in setOf("mbtiles", "sqlite", "db") }
             ?.map { f ->
                 OfflineMap(
@@ -50,8 +58,8 @@ class OfflineMapStore(private val context: Context) {
             }
             ?.sortedBy { it.name.lowercase() }
             ?: emptyList()
-        cache = list
-        return list
+        cache = roads + list.filter { it.bounds != null }
+        return cache!!
     }
 
     fun refresh() { cache = null }

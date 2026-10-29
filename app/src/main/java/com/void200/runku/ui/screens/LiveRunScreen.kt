@@ -26,10 +26,15 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import android.Manifest
+import android.content.pm.PackageManager
+import androidx.core.content.ContextCompat
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.rememberScrollState
 import android.os.Build
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.platform.LocalContext
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import androidx.navigation.NavController
 import com.void200.runku.location.Geo
@@ -67,14 +72,20 @@ fun LiveRunScreen(vm: RunkuViewModel, nav: NavController) {
         }
     }
     val multiple = rememberMultiplePermissionsState(needed)
+    val locationGranted = multiple.permissions.any {
+        it.permission == Manifest.permission.ACCESS_FINE_LOCATION && it.status.isGranted
+    }
+    val bluetoothGranted = Build.VERSION.SDK_INT < 31 ||
+        (ContextCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_SCAN) == PackageManager.PERMISSION_GRANTED &&
+         ContextCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED)
 
     LaunchedEffect(Unit) {
         if (!multiple.allPermissionsGranted) multiple.launchMultiplePermissionRequest()
         // Do NOT auto-start here: "Stop" must stay stopped. Start is triggered
         // explicitly from Home / Target, or restored if a run is already active.
     }
-    LaunchedEffect(multiple.allPermissionsGranted, s.running) {
-        if (multiple.allPermissionsGranted && s.running) vm.bindSensors(context, settings.hrSource)
+    LaunchedEffect(locationGranted, bluetoothGranted, s.running, settings.hrSource) {
+        if (locationGranted && s.running) vm.bindSensors(context, if (bluetoothGranted) settings.hrSource else "off")
     }
     DisposableEffect(Unit) { onDispose { /* keep bound; unbind on stop */ } }
 
@@ -95,7 +106,7 @@ fun LiveRunScreen(vm: RunkuViewModel, nav: NavController) {
                 Text("Mulai dari Beranda atau Target.", fontSize = 13.sp, color = c.muted)
                 Spacer(Modifier.height(20.dp))
                 Button(
-                    onClick = { vm.startRun(); vm.bindSensors(context, settings.hrSource) },
+                    onClick = { if (locationGranted) vm.startRun() else multiple.launchMultiplePermissionRequest() },
                     shape = RoundedCornerShape(999.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = c.accent, contentColor = c.accentInk),
                 ) { Text("Mulai Lari", fontWeight = FontWeight.Bold) }
@@ -111,7 +122,7 @@ fun LiveRunScreen(vm: RunkuViewModel, nav: NavController) {
         },
     ) { pad ->
         Column(
-            Modifier.fillMaxSize().padding(pad).padding(horizontal = 18.dp).padding(top = 8.dp),
+            Modifier.fillMaxSize().padding(pad).verticalScroll(rememberScrollState()).padding(horizontal = 18.dp).padding(top = 8.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {

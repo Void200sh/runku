@@ -60,7 +60,8 @@ fun RouteMap(
         }
     } else {
         Box(modifier.fillMaxSize()) {
-            OfflineMapView(context, points, pack, Modifier.fillMaxSize())
+            if (pack.file.name.endsWith(".roads.json")) RoadMap(pack.file, points, c, Modifier.fillMaxSize())
+            else OfflineMapView(context, points, pack, Modifier.fillMaxSize())
             Chip(
                 "${pack.name} · ${pack.sizeLabel()}",
                 selected = true,

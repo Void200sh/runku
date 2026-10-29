@@ -25,6 +25,7 @@ import java.util.UUID
  * Fully offline — no network required.
  */
 class BleHeartRate(context: Context) {
+    private val appContext = context.applicationContext
 
     private val manager = context.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
     private val adapter: BluetoothAdapter? = manager.adapter
@@ -71,7 +72,7 @@ class BleHeartRate(context: Context) {
 
     @SuppressLint("MissingPermission")
     private fun connectAndSubscribe(device: android.bluetooth.BluetoothDevice, emit: (Int) -> Unit) {
-        gatt = device.connectGatt(null, false, object : BluetoothGattCallback() {
+        gatt = device.connectGatt(appContext, false, object : BluetoothGattCallback() {
             override fun onConnectionStateChange(g: BluetoothGatt, status: Int, newState: Int) {
                 if (newState == BluetoothProfile.STATE_CONNECTED) g.discoverServices()
             }

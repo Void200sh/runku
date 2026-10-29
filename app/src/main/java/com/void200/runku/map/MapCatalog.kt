@@ -1,62 +1,69 @@
 package com.void200.runku.map
 
-import android.app.DownloadManager
 import android.content.Context
-import android.net.Uri
-import android.os.Environment
+import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.MutableStateFlow
+import org.json.JSONObject
+import java.io.File
+import java.net.HttpURLConnection
+import java.net.URL
+import java.net.URLEncoder
 
-/**
- * Built-in catalogue of ready-made offline city packs (Indonesia).
- *
- * These are direct .mbtiles downloads — the user taps "Unduh" and the file
- * lands in the app's maps folder automatically, no manual copying.
- *
- * Sources: OpenAndroMaps / OSM exports. URLs are placeholders wired to the
- * app's maps dir; swap in real per-city .mbtiles URLs when publishing.
- */
-data class MapRegion(
-    val id: String,
-    val city: String,
-    val province: String,
-    val sizeLabel: String,
-    val url: String,
-    val bounds: String,           // west,south,east,north
-    val zoom: String = "0-15",
-)
+data class MapRegion(val id: String, val city: String, val province: String, val bounds: String)
 
+/** Downloads small OSM road vectors, not imaginary prebuilt MBTiles URLs.
+ * Never bulk downloads from the public OSM raster tile servers. */
 object MapCatalog {
-
-    val regions: List<MapRegion> = listOf(
-        MapRegion("magelang", "Magelang", "Jawa Tengah", "~45 MB",
-            "https://download.openandromaps.org/indonesia/magelang.mbtiles", "110.10,-7.55,110.40,-7.40"),
-        MapRegion("semarang", "Semarang", "Jawa Tengah", "~90 MB",
-            "https://download.openandromaps.org/indonesia/semarang.mbtiles", "110.25,-7.15,110.55,-6.93"),
-        MapRegion("yogyakarta", "Yogyakarta", "DI Yogyakarta", "~85 MB",
-            "https://download.openandromaps.org/indonesia/yogyakarta.mbtiles", "110.25,-7.90,110.50,-7.70"),
-        MapRegion("solo", "Surakarta", "Jawa Tengah", "~70 MB",
-            "https://download.openandromaps.org/indonesia/surakarta.mbtiles", "110.75,-7.65,110.92,-7.48"),
-        MapRegion("jakarta", "Jakarta", "DKI Jakarta", "~150 MB",
-            "https://download.openandromaps.org/indonesia/jakarta.mbtiles", "106.60,-6.40,107.00,-6.05"),
-        MapRegion("bandung", "Bandung", "Jawa Barat", "~110 MB",
-            "https://download.openandromaps.org/indonesia/bandung.mbtiles", "107.45,-7.05,107.75,-6.80"),
-        MapRegion("surabaya", "Surabaya", "Jawa Timur", "~130 MB",
-            "https://download.openandromaps.org/indonesia/surabaya.mbtiles", "112.55,-7.35,112.85,-7.15"),
-        MapRegion("malang", "Malang", "Jawa Timur", "~80 MB",
-            "https://download.openandromaps.org/indonesia/malong.mbtiles", "112.55,-8.05,112.70,-7.90"),
-        MapRegion("denpasar", "Denpasar", "Bali", "~95 MB",
-            "https://download.openandromaps.org/indonesia/denpasar.mbtiles", "115.10,-8.75,115.30,-8.55"),
+    val regions = listOf(
+        MapRegion("magelang", "Magelang", "Jawa Tengah", "110.19,-7.51,110.25,-7.45"),
+        MapRegion("semarang", "Semarang", "Jawa Tengah", "110.35,-7.03,110.47,-6.94"),
+        MapRegion("yogyakarta", "Yogyakarta", "DI Yogyakarta", "110.32,-7.85,110.42,-7.74"),
+        MapRegion("solo", "Surakarta", "Jawa Tengah", "110.77,-7.60,110.87,-7.53"),
+        MapRegion("jakarta", "Jakarta Pusat", "DKI Jakarta", "106.78,-6.22,106.88,-6.12"),
+        MapRegion("bandung", "Bandung", "Jawa Barat", "107.56,-6.96,107.67,-6.86"),
+        MapRegion("surabaya", "Surabaya Pusat", "Jawa Timur", "112.70,-7.31,112.79,-7.23"),
+        MapRegion("malang", "Malang", "Jawa Timur", "112.59,-8.02,112.67,-7.93"),
+        MapRegion("denpasar", "Denpasar", "Bali", "115.17,-8.71,115.26,-8.62"),
     )
+    val status = MutableStateFlow<Map<String, String>>(emptyMap())
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val jobs = mutableMapOf<String, Job>()
+    fun file(context: Context, region: MapRegion) = File(OfflineMapStore(context).mapsDir(), "${region.id}.roads.json")
+    fun installed(context: Context, region: MapRegion): Boolean = runCatching {
+        val json = JSONObject(file(context, region).readText())
+        json.getJSONArray("elements").length() > 0 && json.has("bounds")
+    }.getOrDefault(false)
 
-    /** Enqueue a download into the app's private maps folder. Returns the download id. */
-    fun download(context: Context, region: MapRegion): Long {
-        val dir = OfflineMapStore(context).mapsDir()
-        val request = DownloadManager.Request(Uri.parse(region.url))
-            .setTitle("Peta ${region.city}")
-            .setDescription("runku · ${region.sizeLabel}")
-            .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-            .setDestinationInExternalFilesDir(context, null, "maps/${region.id}.mbtiles")
-            .setAllowedOverMetered(true)
-        val dm = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
-        return dm.enqueue(request)
+    @Synchronized fun download(context: Context, region: MapRegion) {
+        if (jobs[region.id]?.isActive == true) return
+        val app = context.applicationContext
+        status.value = status.value + (region.id to "Mengunduh jalan kota…")
+        jobs[region.id] = scope.launch {
+            val target = file(app, region)
+            val temp = File(target.path + ".part")
+            runCatching {
+                val b = region.bounds.split(',')
+                val query = "[out:json][timeout:45];way[highway][highway!~\"construction|proposed\"](${b[1]},${b[0]},${b[3]},${b[2]});out geom;"
+                val conn = URL("https://overpass-api.de/api/interpreter").openConnection() as HttpURLConnection
+                try {
+                    conn.requestMethod = "POST"; conn.doOutput = true
+                    conn.connectTimeout = 20000; conn.readTimeout = 65000
+                    conn.setRequestProperty("User-Agent", "runku/1.0 offline-city-map")
+                    conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded")
+                    conn.outputStream.use { it.write(("data=" + URLEncoder.encode(query, "UTF-8")).toByteArray()) }
+                    check(conn.responseCode == 200) { "Server peta HTTP ${conn.responseCode}; coba lagi nanti" }
+                    val json = JSONObject(conn.inputStream.bufferedReader().use { it.readText() })
+                    check(!json.has("remark")) { "Server peta sibuk; coba lagi nanti" }
+                    check(json.getJSONArray("elements").length() > 0) { "Tidak ada data jalan" }
+                    json.put("bounds", region.bounds).put("city", region.city)
+                    temp.writeText(json.toString())
+                    check(temp.renameTo(target)) { "Tidak bisa menyimpan paket" }
+                    status.value = status.value + (region.id to "Siap offline · %.1f MB".format(target.length() / 1048576.0))
+                } finally { conn.disconnect() }
+            }.onFailure {
+                temp.delete()
+                status.value = status.value + (region.id to "Gagal: ${it.message}")
+            }
+        }
     }
 }

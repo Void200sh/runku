@@ -67,6 +67,10 @@ class RunkuViewModel(app: Application) : AndroidViewModel(app) {
     private var hrJob: Job? = null
     private var last: LocationSample? = null
     private val smoother = GpsSmoother()
+    private var activeStarted = 0L
+    private var activeAccumulated = 0L
+    private var saving = false
+    private val pointHr = mutableMapOf<Long, Int>()
 
     fun setTrackPoint(bpm: Int) = onHeartRate(bpm)
     fun isRunning(): Boolean = _live.value.running
@@ -98,6 +102,9 @@ class RunkuViewModel(app: Application) : AndroidViewModel(app) {
     fun startRun(type: ActivityType = ActivityType.RUN, targetType: TargetType = TargetType.FREE, targetValue: Double = 0.0) {
         if (_live.value.running) return
         last = null
+        pointHr.clear()
+        activeAccumulated = 0L
+        activeStarted = android.os.SystemClock.elapsedRealtime()
         hrSamples = 0; hrSum = 0L; smoother.reset()
         _live.value = LiveState(
             running = true, startedAt = System.currentTimeMillis(),
@@ -115,6 +122,7 @@ class RunkuViewModel(app: Application) : AndroidViewModel(app) {
             if (sample.elevation > prev.elevation) gain = sample.elevation - prev.elevation
         }
         last = sample
+        pointHr[res.accepted.timestamp] = s.currentBpm
         _live.value = s.copy(
             distanceMeters = s.distanceMeters + res.addedDistance,
             elevationGain = s.elevationGain + gain,
@@ -127,11 +135,11 @@ class RunkuViewModel(app: Application) : AndroidViewModel(app) {
     private var hrSum = 0L
 
     fun onHeartRate(bpm: Int) {
-        if (bpm <= 0) return
+        if (bpm !in 30..240 || !_live.value.running || _live.value.paused) return
         hrSamples++; hrSum += bpm
         val s = _live.value
         val count = hrSamples
-        val newAvg = if (count > 1) ((s.avgBpm.toLong() * (count - 1) + bpm) / count).toInt() else bpm
+        val newAvg = (hrSum / count).toInt()
         _live.value = s.copy(
             currentBpm = bpm,
             avgBpm = newAvg,
@@ -139,11 +147,24 @@ class RunkuViewModel(app: Application) : AndroidViewModel(app) {
         )
     }
 
-    fun pause() { _live.value = _live.value.copy(paused = true) }
-    fun resume() { _live.value = _live.value.copy(paused = false) }
+    fun pause() {
+        if (!_live.value.running || _live.value.paused) return
+        activeAccumulated += android.os.SystemClock.elapsedRealtime() - activeStarted
+        _live.value = _live.value.copy(paused = true, elapsedMillis = activeAccumulated)
+        smoother.reset(); last = null
+    }
+    fun resume() {
+        if (!_live.value.running || !_live.value.paused) return
+        activeStarted = android.os.SystemClock.elapsedRealtime()
+        smoother.reset(); last = null
+        _live.value = _live.value.copy(paused = false)
+    }
 
     fun stopRun(onSaved: (Long) -> Unit = {}) {
+        if (!_live.value.running || saving) return
+        saving = true
         val s = _live.value
+        _live.value = s.copy(paused = true)
         stopTicker()
         unbindSensors()
         viewModelScope.launch {
@@ -169,16 +190,17 @@ class RunkuViewModel(app: Application) : AndroidViewModel(app) {
                 TrackPoint(
                     activityId = id, lat = p.lat, lon = p.lon, elevation = p.elevation,
                     speedMps = p.speedMps, bearing = p.bearing, accuracy = p.accuracy,
-                    timestamp = p.timestamp, seq = i,
+                    timestamp = p.timestamp, seq = i, hr = pointHr[p.timestamp] ?: 0,
                 )
             }
             db.trackPointDao().insertAll(pts)
             _live.value = LiveState()
+            saving = false
             onSaved(id)
         }
     }
 
-    fun cancelRun() { stopTicker(); _live.value = LiveState() }
+    fun cancelRun() { stopTicker(); unbindSensors(); _live.value = LiveState() }
 
     private fun startTicker() {
         tickerJob?.cancel()
@@ -187,7 +209,7 @@ class RunkuViewModel(app: Application) : AndroidViewModel(app) {
                 kotlinx.coroutines.delay(1000)
                 val s = _live.value
                 if (!s.running) break
-                if (!s.paused) _live.value = s.copy(elapsedMillis = System.currentTimeMillis() - s.startedAt)
+                if (!s.paused) _live.value = s.copy(elapsedMillis = activeAccumulated + android.os.SystemClock.elapsedRealtime() - activeStarted)
             }
         }
     }
@@ -202,6 +224,10 @@ class RunkuViewModel(app: Application) : AndroidViewModel(app) {
 
     suspend fun getActivity(id: Long) = db.activityDao().getById(id)
     suspend fun pointsFor(id: Long) = db.trackPointDao().getForActivity(id)
+    suspend fun renameActivity(id: Long, name: String) {
+        require(name.isNotBlank())
+        db.activityDao().getById(id)?.let { db.activityDao().update(it.copy(name = name.trim().take(100))) }
+    }
     fun deleteActivity(id: Long) = viewModelScope.launch { db.activityDao().delete(id); db.trackPointDao().deleteForActivity(id) }
 
     fun zone(bpm: Int) = HrZones.zoneFor(bpm)

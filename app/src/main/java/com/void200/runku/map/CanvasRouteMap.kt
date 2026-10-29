@@ -47,16 +47,19 @@ fun CanvasRouteMap(
             if (p.lat < minLat) minLat = p.lat; if (p.lat > maxLat) maxLat = p.lat
             if (p.lon < minLon) minLon = p.lon; if (p.lon > maxLon) maxLon = p.lon
         }
-        val spanLat = (maxLat - minLat).coerceAtLeast(1e-5)
-        val spanLon = (maxLon - minLon).coerceAtLeast(1e-5)
+        // One metres-per-pixel scale for both axes. Never stretch a 2m GPS
+        // wobble to fill the entire screen; keep at least 100m of context.
+        val centerLat = (minLat + maxLat) / 2
+        val centerLon = (minLon + maxLon) / 2
+        val lonMeters = 111320.0 * kotlin.math.cos(Math.toRadians(centerLat))
+        val spanY = ((maxLat - minLat) * 111320.0).coerceAtLeast(100.0)
+        val spanX = ((maxLon - minLon) * lonMeters).coerceAtLeast(100.0)
         val pad = 0.08f
+        val scale = minOf(w * (1 - 2 * pad) / spanX, h * (1 - 2 * pad) / spanY)
 
         fun project(p: LocationSample): Offset {
-            val fx = ((p.lon - minLon) / spanLon).toFloat()
-            val fy = ((p.lat - minLat) / spanLat).toFloat()
-            // flip Y (lat grows upward), add padding
-            val px = (pad + fx * (1 - 2 * pad)) * w
-            val py = (1 - (pad + fy * (1 - 2 * pad))) * h
+            val px = (w / 2 + (p.lon - centerLon) * lonMeters * scale).toFloat()
+            val py = (h / 2 - (p.lat - centerLat) * 111320.0 * scale).toFloat()
             return Offset(px, py)
         }
 
