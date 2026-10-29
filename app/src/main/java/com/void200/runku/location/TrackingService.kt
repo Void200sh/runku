@@ -52,10 +52,14 @@ class TrackingService : Service() {
     private fun buildNotification(): Notification {
         val b = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
             Notification.Builder(this, CHANNEL_ID) else @Suppress("DEPRECATION") Notification.Builder(this)
+        // Make notification persistent and non-dismissible so Android doesn't
+        // kill the foreground service under memory pressure.
         return b.setContentTitle("runku · merekam")
-            .setContentText("Pelacakan lari aktif")
+            .setContentText("Pelacakan lari aktif — jangan tutup notifikasi ini")
             .setSmallIcon(android.R.drawable.ic_menu_mylocation)
             .setOngoing(true)
+            .setAutoCancel(false)
+            .setPriority(Notification.PRIORITY_LOW)
             .build()
     }
 
