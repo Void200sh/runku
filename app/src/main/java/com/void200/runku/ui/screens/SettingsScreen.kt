@@ -54,7 +54,7 @@ fun SettingsScreen(vm: RunkuViewModel, nav: NavController) {
     Scaffold(
         containerColor = c.bg,
         bottomBar = {
-            RunkuBottomBar(NavTab.SETTINGS) { tab -> nav.navigate(tab.route) { launchSingleTop = true } }
+            RunkuBottomBar(NavTab.SETTINGS, onSelect = { tab -> nav.navigate(tab.route) { launchSingleTop = true } })
         },
     ) { pad ->
         Column(

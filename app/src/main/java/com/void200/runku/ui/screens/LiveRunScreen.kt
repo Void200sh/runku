@@ -52,7 +52,7 @@ fun LiveRunScreen(vm: RunkuViewModel, nav: NavController) {
     Scaffold(
         containerColor = c.bg,
         bottomBar = {
-            RunkuBottomBar(NavTab.MAP) { tab -> nav.navigate(tab.route) { launchSingleTop = true } }
+            RunkuBottomBar(NavTab.MAP, onSelect = { tab -> nav.navigate(tab.route) { launchSingleTop = true } })
         },
     ) { pad ->
         Column(

@@ -44,6 +44,7 @@ class BleHeartRate(context: Context) {
      */
     @SuppressLint("MissingPermission")
     fun stream(): Flow<Int> = callbackFlow {
+        val channel = this
         if (adapter == null || !adapter.isEnabled) {
             close(); return@callbackFlow
         }
@@ -53,7 +54,7 @@ class BleHeartRate(context: Context) {
             override fun onScanResult(callbackType: Int, result: ScanResult) {
                 if (result.scanRecord?.serviceUuids?.any { it.uuid == HR_SERVICE } == true) {
                     scanner.stopScan(this)
-                    connectAndSubscribe(result.device)
+                    connectAndSubscribe(result.device) { bpm -> channel.trySend(bpm) }
                 }
             }
         }
@@ -69,7 +70,7 @@ class BleHeartRate(context: Context) {
     }
 
     @SuppressLint("MissingPermission")
-    private fun connectAndSubscribe(device: android.bluetooth.BluetoothDevice) {
+    private fun connectAndSubscribe(device: android.bluetooth.BluetoothDevice, emit: (Int) -> Unit) {
         gatt = device.connectGatt(null, false, object : BluetoothGattCallback() {
             override fun onConnectionStateChange(g: BluetoothGatt, status: Int, newState: Int) {
                 if (newState == BluetoothProfile.STATE_CONNECTED) g.discoverServices()
@@ -94,7 +95,7 @@ class BleHeartRate(context: Context) {
                 characteristic: BluetoothGattCharacteristic,
                 value: ByteArray,
             ) {
-                parseHr(value)?.let { trySend(it) }
+                parseHr(value)?.let { emit(it) }
             }
 
             @Deprecated("pre-33")
@@ -103,7 +104,7 @@ class BleHeartRate(context: Context) {
                 characteristic: BluetoothGattCharacteristic,
             ) {
                 @Suppress("DEPRECATION")
-                parseHr(characteristic.value)?.let { trySend(it) }
+                parseHr(characteristic.value)?.let { emit(it) }
             }
         })
     }

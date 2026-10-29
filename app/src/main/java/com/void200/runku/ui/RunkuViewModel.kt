@@ -50,7 +50,7 @@ class RunkuViewModel(app: Application) : AndroidViewModel(app) {
     private val db = RunkuDatabase.get(app)
     private val settings = SettingsStore(app)
 
-    val settingsFlow = settings.flow.stateIn(viewModelScope, SharingStarted.Eagerly, SettingsStore(app).Snapshot())
+    val settingsFlow = settings.flow.stateIn(viewModelScope, SharingStarted.Eagerly, SettingsStore.Snapshot())
 
     val activities: StateFlow<List<Activity>> =
         db.activityDao().observeAll().stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
@@ -157,10 +157,10 @@ class RunkuViewModel(app: Application) : AndroidViewModel(app) {
     private fun stopTicker() { tickerJob?.cancel(); tickerJob = null }
 
     // -------- settings --------
-    fun setTheme(id: String) = viewModelScope.launch { settings.setTheme(com.void200.runku.ui.theme.RunkuTheme.fromId(id)) }
-    fun setDarkMode(m: String) = viewModelScope.launch { settings.setDarkMode(m) }
-    fun setMapMode(m: String) = viewModelScope.launch { settings.setMapMode(m) }
-    fun setHrSource(s: String) = viewModelScope.launch { settings.setHrSource(s) }
+    fun setTheme(id: String) { viewModelScope.launch { settings.setTheme(com.void200.runku.ui.theme.RunkuTheme.fromId(id)) } }
+    fun setDarkMode(m: String) { viewModelScope.launch { settings.setDarkMode(m) } }
+    fun setMapMode(m: String) { viewModelScope.launch { settings.setMapMode(m) } }
+    fun setHrSource(s: String) { viewModelScope.launch { settings.setHrSource(s) } }
 
     suspend fun getActivity(id: Long) = db.activityDao().getById(id)
     suspend fun pointsFor(id: Long) = db.trackPointDao().getForActivity(id)

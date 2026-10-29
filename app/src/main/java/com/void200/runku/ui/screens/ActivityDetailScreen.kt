@@ -157,7 +157,7 @@ fun ActivityDetailScreen(vm: RunkuViewModel, id: Long, nav: NavController) {
 }
 
 @Composable
-private fun Card3(k: String, v: String) {
+private fun androidx.compose.foundation.layout.RowScope.Card3(k: String, v: String) {
     val c = MaterialTheme.runku
     Column(
         Modifier

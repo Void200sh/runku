@@ -42,7 +42,7 @@ fun TargetScreen(vm: RunkuViewModel, nav: NavController) {
     Scaffold(
         containerColor = c.bg,
         bottomBar = {
-            RunkuBottomBar(NavTab.TARGET) { tab -> nav.navigate(tab.route) { launchSingleTop = true } }
+            RunkuBottomBar(NavTab.TARGET, onSelect = { tab -> nav.navigate(tab.route) { launchSingleTop = true } })
         },
     ) { pad ->
         Column(
@@ -69,6 +69,7 @@ fun TargetScreen(vm: RunkuViewModel, nav: NavController) {
                         when (type) {
                             TargetType.DISTANCE -> "%.1f km".format(value)
                             TargetType.DURATION -> "%.0f menit".format(value)
+                            TargetType.PACE -> "%.0f s/km".format(value)
                             TargetType.FREE -> "Bebas sepuasnya"
                         },
                         fontSize = 34.sp, fontWeight = FontWeight.Bold, color = c.accent,

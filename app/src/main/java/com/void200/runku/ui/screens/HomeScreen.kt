@@ -48,7 +48,7 @@ fun HomeScreen(vm: RunkuViewModel, nav: NavController) {
     Scaffold(
         containerColor = c.bg,
         bottomBar = {
-            RunkuBottomBar(NavTab.HOME) { tab -> nav.navigate(tab.route) { launchSingleTop = true } }
+            RunkuBottomBar(NavTab.HOME, onSelect = { tab -> nav.navigate(tab.route) { launchSingleTop = true } })
         },
     ) { pad ->
         Column(
