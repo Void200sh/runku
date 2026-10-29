@@ -57,7 +57,7 @@ fun HeartRateCard(
             )
             Spacer(Modifier.height(2.dp))
             Row(verticalAlignment = Alignment.Bottom) {
-                Text("$bpm", fontSize = 30.sp, fontWeight = FontWeight.ExtraBold, color = c.text)
+                Text(if (bpm > 0) "$bpm" else "--", fontSize = 30.sp, fontWeight = FontWeight.ExtraBold, color = c.text)
                 Spacer(Modifier.size(4.dp))
                 Text("bpm", fontSize = 13.sp, color = c.muted)
             }

@@ -73,8 +73,8 @@ fun LiveRunScreen(vm: RunkuViewModel, nav: NavController) {
         // Do NOT auto-start here: "Stop" must stay stopped. Start is triggered
         // explicitly from Home / Target, or restored if a run is already active.
     }
-    LaunchedEffect(multiple.allPermissionsGranted) {
-        if (multiple.allPermissionsGranted) vm.bindSensors(context, settings.hrSource)
+    LaunchedEffect(multiple.allPermissionsGranted, s.running) {
+        if (multiple.allPermissionsGranted && s.running) vm.bindSensors(context, settings.hrSource)
     }
     DisposableEffect(Unit) { onDispose { /* keep bound; unbind on stop */ } }
 
@@ -145,15 +145,26 @@ fun LiveRunScreen(vm: RunkuViewModel, nav: NavController) {
             )
 
             Spacer(Modifier.height(12.dp))
-            if (s.currentBpm > 0) {
-                HeartRateCard(
-                    bpm = s.currentBpm,
-                    zoneLabel = vm.zone(s.currentBpm).label,
-                    sourceLabel = "Strap BLE",
-                    modifier = Modifier.fillMaxWidth(),
+            // HR card ALWAYS visible — shows "--" until a sensor reports.
+            HeartRateCard(
+                bpm = s.currentBpm,
+                zoneLabel = if (s.currentBpm > 0) vm.zone(s.currentBpm).label else "—",
+                sourceLabel = when (settings.hrSource) {
+                    "ble" -> "Strap BLE"
+                    "camera" -> "Kamera"
+                    else -> "Mati"
+                },
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Spacer(Modifier.height(10.dp))
+            ZoneBar(if (s.currentBpm > 0) vm.zone(s.currentBpm).ordinal + 1 else 0, Modifier.fillMaxWidth())
+            if (s.currentBpm == 0) {
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    if (settings.hrSource == "off") "Sensor detak jantung dimatikan (Pengaturan → Sensor)."
+                    else "Mencari sensor detak jantung… pastikan strap BLE menyala & terpasang.",
+                    fontSize = 11.sp, color = c.muted,
                 )
-                Spacer(Modifier.height(10.dp))
-                ZoneBar(vm.zone(s.currentBpm).ordinal + 1, Modifier.fillMaxWidth())
             }
 
             Spacer(Modifier.height(16.dp))
