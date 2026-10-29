@@ -54,7 +54,14 @@ class LocationTracker(context: Context) {
             }
         }
 
-        client.requestLocationUpdates(request, callback, Looper.getMainLooper())
+        // Use a background looper so location callbacks don't block the main thread
+        // (prevents ANR / app-not-responding crashes during long runs).
+        val handlerThread = android.os.HandlerThread("runku-location").apply { start() }
+        client.requestLocationUpdates(request, callback, handlerThread.looper)
+        awaitClose {
+            client.removeLocationUpdates(callback)
+            handlerThread.quitSafely()
+        }
         awaitClose { client.removeLocationUpdates(callback) }
     }
 }

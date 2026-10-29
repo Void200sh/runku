@@ -34,10 +34,12 @@ class OfflineMapStore(private val context: Context) {
     fun mapsDir(): File =
         File(context.getExternalFilesDir(null) ?: context.filesDir, "maps").apply { mkdirs() }
 
-    @Volatile private var cache: List<OfflineMap>? = null
+    // No cache — always read fresh from disk so newly downloaded maps
+    // (or maps added/removed by the user) are picked up immediately.
+    // Performance impact is negligible (small directory, called only on
+    // recomposition).
 
     fun available(): List<OfflineMap> {
-        cache?.let { return it }
         val dir = mapsDir()
         val roads = dir.listFiles { f -> f.name.endsWith(".roads.json") }?.mapNotNull { f ->
             runCatching {
@@ -58,11 +60,10 @@ class OfflineMapStore(private val context: Context) {
             }
             ?.sortedBy { it.name.lowercase() }
             ?: emptyList()
-        cache = roads + list.filter { it.bounds != null }
-        return cache!!
+        return roads + list.filter { it.bounds != null }
     }
 
-    fun refresh() { cache = null }
+    fun refresh() { /* no-op: available() always reads fresh */ }
 
     fun hasAny(): Boolean = available().isNotEmpty()
 

@@ -45,7 +45,9 @@ fun RouteMap(
     val context = LocalContext.current
     val store = remember { OfflineMapStore(context) }
 
-    val pack = remember(points.size) {
+    // Re-evaluate pack on every recomposition (no remember) so newly
+    // downloaded maps are picked up without restarting the app/run.
+    val pack = run {
         val last = points.lastOrNull()
         if (last != null) store.packFor(last.lat, last.lon) else store.available().firstOrNull()
     }
