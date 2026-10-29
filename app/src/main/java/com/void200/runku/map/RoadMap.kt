@@ -69,7 +69,7 @@ data class RoadLine(val points: List<Pair<Double, Double>>, val highway: String,
         // Major roads (thicker, darker)
         d.lines.filter { it.highway in majorTypes }.forEach { road ->
             if (road.points.size < 2) return@forEach
-            val (width, color) = when (road.highway) {
+            val (width, color): Pair<Float, Color> = when (road.highway) {
                 "motorway", "trunk" -> 4f to colors.text.copy(alpha = 0.6f)
                 "primary" -> 3.5f to colors.text.copy(alpha = 0.5f)
                 "secondary" -> 3f to colors.text.copy(alpha = 0.45f)
