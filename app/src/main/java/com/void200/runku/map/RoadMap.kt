@@ -7,7 +7,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import java.io.File
 import com.void200.runku.location.LocationSample
 import com.void200.runku.ui.theme.RunkuColors
 import kotlinx.coroutines.Dispatchers
@@ -30,9 +32,9 @@ data class RoadLine(val points: List<Pair<Double, Double>>, val highway: String,
                     val geometry = w.optJSONArray("geometry") ?: continue
                     val tags = w.optJSONObject("tags")
                     val hw = tags?.optString("highway", "road") ?: "road"
-                    val name = tags?.optString("name")
+                    val name = tags?.optString("name")?.toString()
                     add(RoadLine(buildList { for (j in 0 until geometry.length()) {
-                        val p = geometry.getJSONObject(j); add(p.getDouble("lat") to p.getDouble("lon"))
+                        val p = geometry.getJSONObject(j); add(Pair(p.getDouble("lat"), p.getDouble("lon")))
                     } }, hw, if (name.isNullOrBlank()) null else name))
                 }
             })
@@ -86,7 +88,7 @@ data class RoadLine(val points: List<Pair<Double, Double>>, val highway: String,
         if (points.isNotEmpty()) {
             val path = Path()
             points.forEachIndexed { i, p -> val o = xy(p.lat, p.lon); if (i == 0) path.moveTo(o.x, o.y) else path.lineTo(o.x, o.y) }
-            drawPath(path, colors.accent, style = Stroke(6f, cap = Stroke.Cap.Round))
+            drawPath(path, colors.accent, style = Stroke(6f, cap = StrokeCap.Round))
             val p = points.last()
             drawCircle(colors.accent.copy(alpha = 0.25f), 18f, xy(p.lat, p.lon))
             drawCircle(colors.accent, 8f, xy(p.lat, p.lon))
