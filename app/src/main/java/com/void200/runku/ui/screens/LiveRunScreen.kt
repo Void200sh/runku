@@ -25,9 +25,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import android.Manifest
+import android.os.Build
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.ui.platform.LocalContext
+import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import androidx.navigation.NavController
 import com.void200.runku.location.Geo
-import com.void200.runku.map.CanvasRouteMap
+import com.void200.runku.map.RouteMap
 import com.void200.runku.ui.RunkuViewModel
 import com.void200.runku.ui.components.Chip
 import com.void200.runku.ui.components.HeartRateCard
@@ -41,13 +47,35 @@ import com.void200.runku.ui.components.StatGrid
 import com.void200.runku.ui.components.ZoneBar
 import com.void200.runku.ui.theme.runku
 
+@OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun LiveRunScreen(vm: RunkuViewModel, nav: NavController) {
     val c = MaterialTheme.runku
     val s by vm.live.collectAsState()
+    val settings by vm.settingsFlow.collectAsState()
+    val context = LocalContext.current
 
-    // auto-start if navigated here fresh
-    LaunchedEffect(Unit) { if (!s.running) vm.startRun() }
+    val needed = buildList {
+        add(Manifest.permission.ACCESS_FINE_LOCATION)
+        add(Manifest.permission.ACCESS_COARSE_LOCATION)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            add(Manifest.permission.BLUETOOTH_SCAN)
+            add(Manifest.permission.BLUETOOTH_CONNECT)
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            add(Manifest.permission.POST_NOTIFICATIONS)
+        }
+    }
+    val multiple = rememberMultiplePermissionsState(needed)
+
+    LaunchedEffect(Unit) {
+        if (!multiple.allPermissionsGranted) multiple.launchMultiplePermissionRequest()
+        if (!vm.live.value.running) vm.startRun()
+    }
+    LaunchedEffect(multiple.allPermissionsGranted) {
+        if (multiple.allPermissionsGranted) vm.bindSensors(context, settings.hrSource)
+    }
+    DisposableEffect(Unit) { onDispose { /* keep bound; unbind on stop */ } }
 
     Scaffold(
         containerColor = c.bg,
@@ -61,7 +89,7 @@ fun LiveRunScreen(vm: RunkuViewModel, nav: NavController) {
         ) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Chip("● Live", selected = true)
-                Chip("Offline OK")
+                Chip(if (multiple.allPermissionsGranted) "Offline OK" else "Izin…")
             }
 
             Spacer(Modifier.height(20.dp))
@@ -103,7 +131,7 @@ fun LiveRunScreen(vm: RunkuViewModel, nav: NavController) {
 
             Spacer(Modifier.height(16.dp))
             RunkuCard(Modifier.fillMaxWidth().height(150.dp)) {
-                CanvasRouteMap(s.points, c, Modifier.fillMaxSize())
+                RouteMap(s.points, Modifier.fillMaxSize())
             }
 
             Spacer(Modifier.height(16.dp))

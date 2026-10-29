@@ -10,9 +10,11 @@ import com.void200.runku.data.RunkuDatabase
 import com.void200.runku.data.SettingsStore
 import com.void200.runku.data.TargetType
 import com.void200.runku.data.TrackPoint
+import com.void200.runku.hr.BleHeartRate
 import com.void200.runku.hr.HrZones
 import com.void200.runku.location.Geo
 import com.void200.runku.location.LocationSample
+import com.void200.runku.location.LocationTracker
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -59,12 +61,41 @@ class RunkuViewModel(app: Application) : AndroidViewModel(app) {
     val live: StateFlow<LiveState> = _live.asStateFlow()
 
     private var tickerJob: Job? = null
+    private var gpsJob: Job? = null
+    private var hrJob: Job? = null
     private var last: LocationSample? = null
+
+    fun setTrackPoint(bpm: Int) = onHeartRate(bpm)
+    fun isRunning(): Boolean = _live.value.running
+
+    /** Start GPS + HR collection for the current run. Call with a Context when a run is active. */
+    fun bindSensors(context: Context, hrSource: String = "ble") {
+        gpsJob?.cancel()
+        gpsJob = viewModelScope.launch {
+            LocationTracker(context).stream(1000L).collect { sample ->
+                onSample(sample)
+            }
+        }
+        hrJob?.cancel()
+        if (hrSource == "ble") {
+            hrJob = viewModelScope.launch {
+                runCatching {
+                    BleHeartRate(context).stream().collect { bpm -> onHeartRate(bpm) }
+                }
+            }
+        }
+    }
+
+    fun unbindSensors() {
+        gpsJob?.cancel(); gpsJob = null
+        hrJob?.cancel(); hrJob = null
+    }
 
     // -------- tracking --------
     fun startRun(type: ActivityType = ActivityType.RUN, targetType: TargetType = TargetType.FREE, targetValue: Double = 0.0) {
         if (_live.value.running) return
         last = null
+        hrSamples = 0; hrSum = 0L
         _live.value = LiveState(
             running = true, startedAt = System.currentTimeMillis(),
             targetType = targetType, targetValue = targetValue,
@@ -90,10 +121,14 @@ class RunkuViewModel(app: Application) : AndroidViewModel(app) {
         )
     }
 
+    private var hrSamples = 0
+    private var hrSum = 0L
+
     fun onHeartRate(bpm: Int) {
         if (bpm <= 0) return
+        hrSamples++; hrSum += bpm
         val s = _live.value
-        val count = s.points.count { it.timestamp > 0 } // simple avg basis
+        val count = hrSamples
         val newAvg = if (count > 1) ((s.avgBpm.toLong() * (count - 1) + bpm) / count).toInt() else bpm
         _live.value = s.copy(
             currentBpm = bpm,
@@ -108,6 +143,7 @@ class RunkuViewModel(app: Application) : AndroidViewModel(app) {
     fun stopRun(onSaved: (Long) -> Unit = {}) {
         val s = _live.value
         stopTicker()
+        unbindSensors()
         viewModelScope.launch {
             val endTime = System.currentTimeMillis()
             val activity = Activity(

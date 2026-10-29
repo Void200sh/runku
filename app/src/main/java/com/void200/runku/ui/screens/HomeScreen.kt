@@ -21,6 +21,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -28,6 +29,7 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.void200.runku.location.Geo
 import com.void200.runku.map.CanvasRouteMap
+import com.void200.runku.map.OfflineMapStore
 import com.void200.runku.ui.RunkuViewModel
 import com.void200.runku.ui.components.Chip
 import com.void200.runku.ui.components.Label
@@ -44,6 +46,7 @@ fun HomeScreen(vm: RunkuViewModel, nav: NavController) {
     val activities by vm.activities.collectAsState()
     val settings by vm.settingsFlow.collectAsState()
     val mapIsTiles = settings.mapMode == "tiles"
+    val context = LocalContext.current
 
     Scaffold(
         containerColor = c.bg,
@@ -69,30 +72,60 @@ fun HomeScreen(vm: RunkuViewModel, nav: NavController) {
             Spacer(Modifier.height(16.dp))
 
             // map / canvas
+            val offlineStore = androidx.compose.runtime.remember(context) { OfflineMapStore(context) }
+            val packs = androidx.compose.runtime.remember(offlineStore) { offlineStore.available() }
+            val pack = packs.firstOrNull()
+
             RunkuCard(Modifier.fillMaxWidth().height(190.dp)) {
                 Box(Modifier.fillMaxSize()) {
                     CanvasRouteMap(
                         points = emptyList(),
                         colors = c,
                         modifier = Modifier.fillMaxSize(),
-                        showGrid = !mapIsTiles,
+                        showGrid = true,
                     )
                     Chip(
-                        if (mapIsTiles) "mbTiles · zoom 15" else "Canvas · tanpa peta",
+                        if (pack != null) "${pack.name} · ${pack.sizeLabel()}" else "Canvas · tanpa peta",
+                        selected = pack != null,
                         modifier = Modifier.align(Alignment.TopStart),
                     )
                 }
             }
 
-            if (!mapIsTiles) {
+            if (pack == null) {
                 Spacer(Modifier.height(12.dp))
                 RunkuCard(Modifier.fillMaxWidth()) {
-                    Text("Peta kota belum diunduh", fontWeight = FontWeight.SemiBold, color = c.text)
-                    Spacer(Modifier.height(4.dp))
-                    Text(
-                        "Rute tetap terekam (canvas). Unduh peta biar ada basemap.",
-                        fontSize = 13.sp, color = c.muted,
-                    )
+                    androidx.compose.foundation.layout.Row(
+                        Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Column(Modifier.weight(1f)) {
+                            Text("Peta kota belum diunduh", fontWeight = FontWeight.SemiBold, color = c.text)
+                            Spacer(Modifier.height(4.dp))
+                            Text(
+                                "Rute tetap terekam (canvas). Unduh peta biar ada basemap.",
+                                fontSize = 13.sp, color = c.muted,
+                            )
+                        }
+                        Chip("Unduh", selected = true, onClick = { nav.navigate("maps") })
+                    }
+                }
+            } else {
+                Spacer(Modifier.height(12.dp))
+                RunkuCard(Modifier.fillMaxWidth()) {
+                    androidx.compose.foundation.layout.Row(
+                        Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Column(Modifier.weight(1f)) {
+                            Text("${packs.size} peta offline aktif", fontWeight = FontWeight.SemiBold, color = c.text)
+                            Spacer(Modifier.height(4.dp))
+                            Text("Auto-deteksi via GPS saat lari.", fontSize = 13.sp, color = c.muted)
+                        }
+                        Chip("Kelola", selected = true, onClick = { nav.navigate("maps") })
+                    }
                 }
             }
 

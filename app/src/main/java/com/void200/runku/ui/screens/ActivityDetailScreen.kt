@@ -1,6 +1,10 @@
 package com.void200.runku.ui.screens
 
 import android.content.Context
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.background
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,6 +23,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -52,6 +57,7 @@ fun ActivityDetailScreen(vm: RunkuViewModel, id: Long, nav: NavController) {
     val context = LocalContext.current
     var activity by remember { mutableStateOf<Activity?>(null) }
     var points by remember { mutableStateOf<List<TrackPoint>>(emptyList()) }
+    val allActivities by vm.activities.collectAsState()
 
     LaunchedEffect(id) {
         activity = vm.getActivity(id)
@@ -115,11 +121,17 @@ fun ActivityDetailScreen(vm: RunkuViewModel, id: Long, nav: NavController) {
                 ) { Text("Bagikan", fontWeight = FontWeight.Bold) }
                 Button(
                     onClick = {
-                        Exporter.writeAndShare(context, "runku-${act.id}.png.txt", Exporter.json(act, points))
+                        val bmp = com.void200.runku.export.ShareCard.render(act, points)
+                        val ok = com.void200.runku.export.ShareCard.saveToGallery(context, bmp, "runku-${act.id}")
+                        android.widget.Toast.makeText(
+                            context,
+                            if (ok) "JPG tersimpan di Galeri (Pictures/runku)" else "Gagal simpan JPG",
+                            android.widget.Toast.LENGTH_LONG,
+                        ).show()
                     },
                     Modifier.weight(1f).height(52.dp), shape = RoundedCornerShape(999.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = c.surface2, contentColor = c.accent),
-                ) { Text("Simpan", fontWeight = FontWeight.Bold) }
+                ) { Text("Unduh JPG", fontWeight = FontWeight.Bold) }
             }
 
             if (act.avgHr > 0) {
@@ -132,6 +144,71 @@ fun ActivityDetailScreen(vm: RunkuViewModel, id: Long, nav: NavController) {
                     sourceLabel = "maks ${act.maxHr}",
                     modifier = Modifier.fillMaxWidth(),
                 )
+            }
+
+            // ---- splits per km ----
+            val splits = com.void200.runku.data.Splits.from(points)
+            if (splits.isNotEmpty()) {
+                Spacer(Modifier.height(20.dp))
+                Label("Split per km")
+                Spacer(Modifier.height(10.dp))
+                RunkuCard(Modifier.fillMaxWidth()) {
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        val maxSec = splits.maxOf { it.secPerKm }
+                        splits.forEach { sp ->
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    if (sp.isPartial) "%.1f".format(activity!!.distanceMeters / 1000.0) else "${sp.km} km",
+                                    fontSize = 12.sp, fontWeight = FontWeight.Bold, color = c.muted,
+                                    modifier = Modifier.width(52.dp),
+                                )
+                                Spacer(Modifier.width(8.dp))
+                                Box(
+                                    Modifier.weight(1f).height(8.dp)
+                                        .clip(RoundedCornerShape(999.dp))
+                                        .background(c.surface2),
+                                ) {
+                                    Box(
+                                        Modifier
+                                            .fillMaxWidth((sp.secPerKm / maxSec).toFloat().coerceIn(0.1f, 1f))
+                                            .height(8.dp)
+                                            .clip(RoundedCornerShape(999.dp))
+                                            .background(c.accentGradient),
+                                    )
+                                }
+                                Spacer(Modifier.width(8.dp))
+                                Text(
+                                    Geo.formatPace(sp.secPerKm), fontSize = 12.sp,
+                                    color = c.text, modifier = Modifier.width(56.dp),
+                                    textAlign = androidx.compose.ui.text.style.TextAlign.End,
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            // ---- badges ----
+            val badges = com.void200.runku.data.Badges.forActivity(act, allActivities)
+            if (badges.isNotEmpty()) {
+                Spacer(Modifier.height(20.dp))
+                Label("Pencapaian")
+                Spacer(Modifier.height(10.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    badges.forEach { b ->
+                        Column(
+                            Modifier.weight(1f)
+                                .clip(MaterialTheme.shapes.small)
+                                .background(c.surface2)
+                                .padding(vertical = 12.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                        ) {
+                            Text(b.icon, fontSize = 20.sp)
+                            Spacer(Modifier.height(4.dp))
+                            Text(b.label, fontSize = 11.sp, color = c.muted, fontWeight = FontWeight.Medium)
+                        }
+                    }
+                }
             }
 
             Spacer(Modifier.height(20.dp))
