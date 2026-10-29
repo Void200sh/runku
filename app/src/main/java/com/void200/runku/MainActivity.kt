@@ -18,6 +18,7 @@ import com.void200.runku.ui.RunkuViewModel
 import com.void200.runku.ui.screens.ActivityDetailScreen
 import com.void200.runku.ui.screens.HomeScreen
 import com.void200.runku.ui.screens.LiveRunScreen
+import com.void200.runku.ui.screens.HistoryScreen
 import com.void200.runku.ui.screens.MapsScreen
 import com.void200.runku.ui.screens.SettingsScreen
 import com.void200.runku.ui.screens.TargetScreen
@@ -45,7 +46,8 @@ class MainActivity : ComponentActivity() {
                         composable("live") { LiveRunScreen(vm, nav) }
                         composable("target") { TargetScreen(vm, nav) }
                         composable("settings") { SettingsScreen(vm, nav) }
-                        composable("maps") { MapsScreen(nav = nav) }
+                        composable("maps") { MapsScreen(nav) }
+                        composable("history") { HistoryScreen(vm, nav) }
                         composable("detail/{id}") { back ->
                             val id = back.arguments?.getString("id")?.toLongOrNull() ?: 0L
                             ActivityDetailScreen(vm, id, nav)

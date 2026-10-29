@@ -74,7 +74,15 @@ fun ActivityDetailScreen(vm: RunkuViewModel, id: Long, nav: NavController) {
         LocationSample(it.lat, it.lon, it.elevation, it.speedMps, it.bearing, it.accuracy, it.timestamp)
     }
 
-    Scaffold(containerColor = c.bg) { pad ->
+    Scaffold(
+        containerColor = c.bg,
+        bottomBar = {
+            com.void200.runku.ui.components.RunkuBottomBar(
+                com.void200.runku.ui.components.NavTab.HISTORY,
+                onSelect = { tab -> nav.navigate(tab.route) { launchSingleTop = true } },
+            )
+        },
+    ) { pad ->
         Column(
             Modifier
                 .fillMaxSize()
@@ -97,7 +105,7 @@ fun ActivityDetailScreen(vm: RunkuViewModel, id: Long, nav: NavController) {
                 Column {
                     Box(Modifier.fillMaxWidth().height(200.dp)) {
                         CanvasRouteMap(samples, c, Modifier.fillMaxSize())
-                        Chip("runku · Magelang", modifier = Modifier.align(Alignment.BottomEnd))
+                        Chip("runku", modifier = Modifier.align(Alignment.BottomEnd))
                     }
                     Spacer(Modifier.height(14.dp))
                     Metric(Geo.formatDistance(act.distanceMeters), "km", size = 42, valueColor = c.accent)

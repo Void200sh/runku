@@ -64,7 +64,7 @@ fun HomeScreen(vm: RunkuViewModel, nav: NavController) {
             val offlineStore = androidx.compose.runtime.remember(context) { OfflineMapStore(context) }
             val packs = androidx.compose.runtime.remember(offlineStore) { offlineStore.available() }
             val pack = packs.firstOrNull()
-            val cityName = pack?.name ?: "Belum ada peta"
+            val cityName = pack?.name ?: "runku"
 
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 com.void200.runku.ui.components.BrandMark(showCredit = true, iconSize = 34)
@@ -74,7 +74,7 @@ fun HomeScreen(vm: RunkuViewModel, nav: NavController) {
             Spacer(Modifier.height(10.dp))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Column {
-                    Label("Kota aktif")
+                    Label(if (pack != null) "Peta aktif" else "Mode rute")
                     Text(cityName, fontSize = 22.sp, fontWeight = FontWeight.Bold, color = c.text)
                 }
             }

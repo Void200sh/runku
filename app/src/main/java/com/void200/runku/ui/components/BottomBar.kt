@@ -12,7 +12,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.TrackChanges
 import androidx.compose.material3.Icon
@@ -31,7 +31,7 @@ import com.void200.runku.ui.theme.runku
 enum class NavTab(val label: String, val icon: ImageVector, val route: String) {
     HOME("Beranda", Icons.Filled.Home, "home"),
     TARGET("Target", Icons.Filled.TrackChanges, "target"),
-    MAP("Peta", Icons.Filled.LocationOn, "live"),
+    HISTORY("Riwayat", Icons.Filled.History, "history"),
     SETTINGS("Atur", Icons.Filled.Settings, "settings"),
 }
 

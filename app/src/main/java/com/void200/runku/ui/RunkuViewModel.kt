@@ -14,6 +14,7 @@ import com.void200.runku.hr.BleHeartRate
 import com.void200.runku.hr.HrZones
 import com.void200.runku.location.Geo
 import com.void200.runku.location.LocationSample
+import com.void200.runku.location.GpsSmoother
 import com.void200.runku.location.LocationTracker
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -35,10 +36,11 @@ data class LiveState(
     val avgBpm: Int = 0,
     val maxBpm: Int = 0,
     val points: List<LocationSample> = emptyList(),
+    val smoothedSpeedMps: Double = 0.0,
     val targetType: TargetType = TargetType.FREE,
     val targetValue: Double = 0.0,
 ) {
-    val paceSecPerKm: Double get() = Geo.paceSecPerKm(distanceMeters, elapsedMillis)
+    val paceSecPerKm: Double get() = if (distanceMeters < 20.0) 0.0 else if (elapsedMillis <= 0) 0.0 else (elapsedMillis / 1000.0) / (distanceMeters / 1000.0)
     val speedKmh: Double get() = Geo.speedKmh(distanceMeters, elapsedMillis)
     val progress: Float get() = when (targetType) {
         TargetType.DISTANCE -> if (targetValue > 0) (distanceMeters / (targetValue * 1000.0)).toFloat().coerceIn(0f, 1f) else 0f
@@ -64,6 +66,7 @@ class RunkuViewModel(app: Application) : AndroidViewModel(app) {
     private var gpsJob: Job? = null
     private var hrJob: Job? = null
     private var last: LocationSample? = null
+    private val smoother = GpsSmoother()
 
     fun setTrackPoint(bpm: Int) = onHeartRate(bpm)
     fun isRunning(): Boolean = _live.value.running
@@ -95,7 +98,7 @@ class RunkuViewModel(app: Application) : AndroidViewModel(app) {
     fun startRun(type: ActivityType = ActivityType.RUN, targetType: TargetType = TargetType.FREE, targetValue: Double = 0.0) {
         if (_live.value.running) return
         last = null
-        hrSamples = 0; hrSum = 0L
+        hrSamples = 0; hrSum = 0L; smoother.reset()
         _live.value = LiveState(
             running = true, startedAt = System.currentTimeMillis(),
             targetType = targetType, targetValue = targetValue,
@@ -106,18 +109,17 @@ class RunkuViewModel(app: Application) : AndroidViewModel(app) {
     fun onSample(sample: LocationSample) {
         val s = _live.value
         if (!s.running || s.paused) return
-        var added = 0.0
+        val res = smoother.process(sample, s.elapsedMillis / 1000.0) ?: return
         var gain = 0.0
         last?.let { prev ->
-            added = Geo.distance(prev.lat, prev.lon, sample.lat, sample.lon)
-            if (added < 0.3 || added > 200) added = 0.0 // jitter / teleport guard
             if (sample.elevation > prev.elevation) gain = sample.elevation - prev.elevation
         }
         last = sample
         _live.value = s.copy(
-            distanceMeters = s.distanceMeters + added,
+            distanceMeters = s.distanceMeters + res.addedDistance,
             elevationGain = s.elevationGain + gain,
-            points = s.points + sample,
+            points = s.points + res.accepted,
+            smoothedSpeedMps = res.stableSpeedMps,
         )
     }
 

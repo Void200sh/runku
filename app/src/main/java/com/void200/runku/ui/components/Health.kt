@@ -50,7 +50,11 @@ fun HeartRateCard(
             modifier = Modifier.size(26.dp),
         )
         Column(Modifier.weight(1f)) {
-            Label("Detak jantung · $zoneLabel")
+            Text(
+                "Detak jantung · $zoneLabel",
+                fontSize = 11.sp, letterSpacing = 1.2.sp, color = c.muted,
+                maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+            )
             Spacer(Modifier.height(2.dp))
             Row(verticalAlignment = Alignment.Bottom) {
                 Text("$bpm", fontSize = 30.sp, fontWeight = FontWeight.ExtraBold, color = c.text)
@@ -58,7 +62,17 @@ fun HeartRateCard(
                 Text("bpm", fontSize = 13.sp, color = c.muted)
             }
         }
-        Chip(sourceLabel, selected = true)
+        Box(
+            Modifier
+                .clip(RoundedCornerShape(999.dp))
+                .background(c.accentSoft)
+                .padding(horizontal = 10.dp, vertical = 6.dp),
+        ) {
+            Text(
+                sourceLabel, fontSize = 11.sp, color = c.accent, fontWeight = FontWeight.SemiBold,
+                maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+            )
+        }
     }
 }
 

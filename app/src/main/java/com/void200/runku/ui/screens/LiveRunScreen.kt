@@ -70,17 +70,44 @@ fun LiveRunScreen(vm: RunkuViewModel, nav: NavController) {
 
     LaunchedEffect(Unit) {
         if (!multiple.allPermissionsGranted) multiple.launchMultiplePermissionRequest()
-        if (!vm.live.value.running) vm.startRun()
+        // Do NOT auto-start here: "Stop" must stay stopped. Start is triggered
+        // explicitly from Home / Target, or restored if a run is already active.
     }
     LaunchedEffect(multiple.allPermissionsGranted) {
         if (multiple.allPermissionsGranted) vm.bindSensors(context, settings.hrSource)
     }
     DisposableEffect(Unit) { onDispose { /* keep bound; unbind on stop */ } }
 
+    if (!s.running) {
+        Scaffold(
+            containerColor = c.bg,
+            bottomBar = {
+                RunkuBottomBar(NavTab.HOME, onSelect = { tab -> nav.navigate(tab.route) { launchSingleTop = true } })
+            },
+        ) { pad ->
+            Column(
+                Modifier.fillMaxSize().padding(pad).padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center,
+            ) {
+                Text("Belum ada lari aktif", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = c.text)
+                Spacer(Modifier.height(8.dp))
+                Text("Mulai dari Beranda atau Target.", fontSize = 13.sp, color = c.muted)
+                Spacer(Modifier.height(20.dp))
+                Button(
+                    onClick = { vm.startRun(); vm.bindSensors(context, settings.hrSource) },
+                    shape = RoundedCornerShape(999.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = c.accent, contentColor = c.accentInk),
+                ) { Text("Mulai Lari", fontWeight = FontWeight.Bold) }
+            }
+        }
+        return
+    }
+
     Scaffold(
         containerColor = c.bg,
         bottomBar = {
-            RunkuBottomBar(NavTab.MAP, onSelect = { tab -> nav.navigate(tab.route) { launchSingleTop = true } })
+            RunkuBottomBar(NavTab.HOME, onSelect = { tab -> nav.navigate(tab.route) { launchSingleTop = true } })
         },
     ) { pad ->
         Column(
