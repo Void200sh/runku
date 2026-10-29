@@ -69,12 +69,14 @@ data class RoadLine(val points: List<Pair<Double, Double>>, val highway: String,
         // Major roads (thicker, darker)
         d.lines.filter { it.highway in majorTypes }.forEach { road ->
             if (road.points.size < 2) return@forEach
-            val (width, color): Pair<Float, Color> = when (road.highway) {
+            val pair = when (road.highway) {
                 "motorway", "trunk" -> 4f to colors.text.copy(alpha = 0.6f)
                 "primary" -> 3.5f to colors.text.copy(alpha = 0.5f)
                 "secondary" -> 3f to colors.text.copy(alpha = 0.45f)
                 else -> 2.5f to colors.text.copy(alpha = 0.4f)
             }
+            val width = pair.first
+            val color = pair.second
             val path = Path()
             road.points.forEachIndexed { i, p -> val o = xy(p.first, p.second); if (i == 0) path.moveTo(o.x, o.y) else path.lineTo(o.x, o.y) }
             drawPath(path, color, style = Stroke(width))
