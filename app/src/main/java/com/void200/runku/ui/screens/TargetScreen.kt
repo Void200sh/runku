@@ -55,9 +55,9 @@ fun TargetScreen(vm: RunkuViewModel, nav: NavController) {
 
             Spacer(Modifier.height(14.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Chip("Jarak", type == TargetType.DISTANCE) { type = TargetType.DISTANCE; value = 5.0 }
-                Chip("Durasi", type == TargetType.DURATION) { type = TargetType.DURATION; value = 30.0 }
-                Chip("Bebas", type == TargetType.FREE) { type = TargetType.FREE; value = 0.0 }
+                Chip("Jarak", type == TargetType.DISTANCE, onClick = { type = TargetType.DISTANCE; value = 5.0 })
+                Chip("Durasi", type == TargetType.DURATION, onClick = { type = TargetType.DURATION; value = 30.0 })
+                Chip("Bebas", type == TargetType.FREE, onClick = { type = TargetType.FREE; value = 0.0 })
             }
 
             Spacer(Modifier.height(20.dp))
@@ -85,7 +85,7 @@ fun TargetScreen(vm: RunkuViewModel, nav: NavController) {
                                 } else {
                                     "${v.toInt()}'"
                                 }
-                                Chip(label, selected = value == v) { value = v }
+                                Chip(label, selected = value == v, onClick = { value = v })
                             }
                         }
                     }

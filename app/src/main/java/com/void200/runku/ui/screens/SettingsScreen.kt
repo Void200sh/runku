@@ -110,10 +110,10 @@ fun SettingsScreen(vm: RunkuViewModel, nav: NavController) {
                     Text("Sumber HR", fontWeight = FontWeight.SemiBold, color = c.text)
                     Text(hrOptions[hrIdx].second, fontSize = 12.sp, color = c.muted)
                 }
-                Chip("Ganti", selected = true) {
+                Chip("Ganti", selected = true, onClick = {
                     val next = hrOptions[(hrIdx + 1) % hrOptions.size].first
                     vm.setHrSource(next)
-                }
+                })
             }
 
             Spacer(Modifier.height(20.dp))
@@ -131,9 +131,9 @@ fun SettingsScreen(vm: RunkuViewModel, nav: NavController) {
                         fontSize = 12.sp, color = c.muted,
                     )
                 }
-                Chip("Ganti", selected = true) {
+                Chip("Ganti", selected = true, onClick = {
                     vm.setMapMode(if (settings.mapMode == "tiles") "canvas" else "tiles")
-                }
+                })
             }
         }
     }
