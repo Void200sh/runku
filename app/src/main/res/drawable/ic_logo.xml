@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp" android:height="24dp"
+    android:viewportWidth="124" android:viewportHeight="124">
+    <!-- runku compact logo: gradient tile + R + route -->
+    <path android:pathData="M4,4 h116 a0,0 0 0 1 0,0 v116 h-116 z">
+        <aapt:attr xmlns:aapt="http://schemas.android.com/aapt" name="android:fillColor">
+            <gradient
+                android:startX="4" android:startY="4"
+                android:endX="120" android:endY="120"
+                android:type="linear">
+                <item android:offset="0" android:color="#3B6EF6" />
+                <item android:offset="1" android:color="#7D5CFF" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <path
+        android:strokeColor="#FFFFFF" android:strokeWidth="9"
+        android:strokeLineCap="round" android:strokeLineJoin="round" android:fillColor="#00000000"
+        android:pathData="M40,88 L40,38 L60,38 A15,15 0 0 1 60,68 L49,68" />
+    <path
+        android:strokeColor="#FFFFFF" android:strokeWidth="9"
+        android:strokeLineCap="round" android:fillColor="#00000000"
+        android:pathData="M57,68 L76,88" />
+    <path
+        android:strokeColor="#FFFFFF" android:strokeWidth="4" android:strokeLineCap="round"
+        android:strokeAlpha="0.85" android:fillColor="#00000000"
+        android:pathData="M34,100 C50,100 56,92 64,88 C72,84 78,78 92,76" />
+    <path android:fillColor="#FFFFFF" android:pathData="M92,72 A4,4 0 1 1 91.99,72 Z" />
+</vector>

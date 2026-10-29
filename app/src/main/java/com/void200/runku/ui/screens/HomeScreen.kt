@@ -61,21 +61,27 @@ fun HomeScreen(vm: RunkuViewModel, nav: NavController) {
                 .padding(horizontal = 18.dp)
                 .padding(top = 8.dp),
         ) {
+            val offlineStore = androidx.compose.runtime.remember(context) { OfflineMapStore(context) }
+            val packs = androidx.compose.runtime.remember(offlineStore) { offlineStore.available() }
+            val pack = packs.firstOrNull()
+            val cityName = pack?.name ?: "Belum ada peta"
+
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                com.void200.runku.ui.components.BrandMark(showCredit = true, iconSize = 34)
+                Chip(if (pack != null) "Peta" else "Canvas", selected = pack != null)
+            }
+
+            Spacer(Modifier.height(10.dp))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Column {
                     Label("Kota aktif")
-                    Text("Magelang", fontSize = 26.sp, fontWeight = FontWeight.Bold, color = c.text)
+                    Text(cityName, fontSize = 22.sp, fontWeight = FontWeight.Bold, color = c.text)
                 }
-                Chip(if (mapIsTiles) "Mode: Peta" else "Mode: Canvas", selected = true)
             }
 
             Spacer(Modifier.height(16.dp))
 
             // map / canvas
-            val offlineStore = androidx.compose.runtime.remember(context) { OfflineMapStore(context) }
-            val packs = androidx.compose.runtime.remember(offlineStore) { offlineStore.available() }
-            val pack = packs.firstOrNull()
-
             RunkuCard(Modifier.fillMaxWidth().height(190.dp)) {
                 Box(Modifier.fillMaxSize()) {
                     CanvasRouteMap(

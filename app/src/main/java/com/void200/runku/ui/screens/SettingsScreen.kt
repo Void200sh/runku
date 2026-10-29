@@ -135,6 +135,12 @@ fun SettingsScreen(vm: RunkuViewModel, nav: NavController) {
                     vm.setMapMode(if (settings.mapMode == "tiles") "canvas" else "tiles")
                 })
             }
+
+            Spacer(Modifier.height(24.dp))
+            com.void200.runku.ui.components.BrandMark(showCredit = true, iconSize = 34)
+            Spacer(Modifier.height(10.dp))
+            com.void200.runku.ui.components.CreditLine(Modifier.fillMaxWidth())
+            Spacer(Modifier.height(20.dp))
         }
     }
 }

@@ -122,7 +122,7 @@ object ShareCard {
 
         // footer
         p.color = mutedColor; p.textSize = 30f
-        cv.drawText("dibuat offline dengan runku", 70f, 1840f, p)
+        cv.drawText("runku · oleh prawira dwimadya", 70f, 1840f, p)
 
         return bmp
     }
