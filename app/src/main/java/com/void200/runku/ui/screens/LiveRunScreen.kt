@@ -63,9 +63,14 @@ fun LiveRunScreen(vm: RunkuViewModel, nav: NavController) {
     val needed = buildList {
         add(Manifest.permission.ACCESS_FINE_LOCATION)
         add(Manifest.permission.ACCESS_COARSE_LOCATION)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            add(Manifest.permission.BLUETOOTH_SCAN)
-            add(Manifest.permission.BLUETOOTH_CONNECT)
+        if (settings.hrSource == "ble") {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                add(Manifest.permission.BLUETOOTH_SCAN)
+                add(Manifest.permission.BLUETOOTH_CONNECT)
+            }
+        }
+        if (settings.hrSource == "camera") {
+            add(Manifest.permission.CAMERA)
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             add(Manifest.permission.POST_NOTIFICATIONS)
@@ -78,14 +83,23 @@ fun LiveRunScreen(vm: RunkuViewModel, nav: NavController) {
     val bluetoothGranted = Build.VERSION.SDK_INT < 31 ||
         (ContextCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_SCAN) == PackageManager.PERMISSION_GRANTED &&
          ContextCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED)
+    val cameraGranted = ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
+    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
 
     LaunchedEffect(Unit) {
         if (!multiple.allPermissionsGranted) multiple.launchMultiplePermissionRequest()
         // Do NOT auto-start here: "Stop" must stay stopped. Start is triggered
         // explicitly from Home / Target, or restored if a run is already active.
     }
-    LaunchedEffect(locationGranted, bluetoothGranted, s.running, settings.hrSource) {
-        if (locationGranted && s.running) vm.bindSensors(context, if (bluetoothGranted) settings.hrSource else "off")
+    LaunchedEffect(locationGranted, bluetoothGranted, cameraGranted, s.running, settings.hrSource) {
+        if (locationGranted && s.running) {
+            val source = when {
+                settings.hrSource == "camera" && cameraGranted -> "camera"
+                settings.hrSource == "ble" && bluetoothGranted -> "ble"
+                else -> "off"
+            }
+            vm.bindSensors(context, source, lifecycleOwner)
+        }
     }
     DisposableEffect(Unit) { onDispose { /* keep bound; unbind on stop */ } }
 
@@ -101,15 +115,21 @@ fun LiveRunScreen(vm: RunkuViewModel, nav: NavController) {
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center,
             ) {
-                Text("Belum ada lari aktif", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = c.text)
-                Spacer(Modifier.height(8.dp))
-                Text("Mulai dari Beranda atau Target.", fontSize = 13.sp, color = c.muted)
-                Spacer(Modifier.height(20.dp))
-                Button(
-                    onClick = { if (locationGranted) vm.startRun() else multiple.launchMultiplePermissionRequest() },
-                    shape = RoundedCornerShape(999.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = c.accent, contentColor = c.accentInk),
-                ) { Text("Mulai Lari", fontWeight = FontWeight.Bold) }
+                if (s.saving) {
+                    androidx.compose.material3.CircularProgressIndicator(color = c.accent)
+                    Spacer(Modifier.height(16.dp))
+                    Text("Menyimpan lari…", fontSize = 15.sp, color = c.text, fontWeight = FontWeight.SemiBold)
+                } else {
+                    Text("Belum ada lari aktif", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = c.text)
+                    Spacer(Modifier.height(8.dp))
+                    Text("Mulai dari Beranda atau Target.", fontSize = 13.sp, color = c.muted)
+                    Spacer(Modifier.height(20.dp))
+                    Button(
+                        onClick = { if (locationGranted) vm.startRun() else multiple.launchMultiplePermissionRequest() },
+                        shape = RoundedCornerShape(999.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = c.accent, contentColor = c.accentInk),
+                    ) { Text("Mulai Lari", fontWeight = FontWeight.Bold) }
+                }
             }
         }
         return

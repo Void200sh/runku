@@ -11,6 +11,7 @@ import com.void200.runku.data.SettingsStore
 import com.void200.runku.data.TargetType
 import com.void200.runku.data.TrackPoint
 import com.void200.runku.hr.BleHeartRate
+import com.void200.runku.hr.CameraHeartRate
 import com.void200.runku.hr.HrZones
 import com.void200.runku.location.Geo
 import com.void200.runku.location.LocationSample
@@ -39,6 +40,7 @@ data class LiveState(
     val smoothedSpeedMps: Double = 0.0,
     val targetType: TargetType = TargetType.FREE,
     val targetValue: Double = 0.0,
+    val saving: Boolean = false,
 ) {
     val paceSecPerKm: Double get() = if (distanceMeters < 20.0) 0.0 else if (elapsedMillis <= 0) 0.0 else (elapsedMillis / 1000.0) / (distanceMeters / 1000.0)
     val speedKmh: Double get() = Geo.speedKmh(distanceMeters, elapsedMillis)
@@ -76,7 +78,7 @@ class RunkuViewModel(app: Application) : AndroidViewModel(app) {
     fun isRunning(): Boolean = _live.value.running
 
     /** Start GPS + HR collection for the current run. Call with a Context when a run is active. */
-    fun bindSensors(context: Context, hrSource: String = "ble") {
+    fun bindSensors(context: Context, hrSource: String = "ble", lifecycleOwner: androidx.lifecycle.LifecycleOwner? = null) {
         gpsJob?.cancel()
         gpsJob = viewModelScope.launch {
             LocationTracker(context).stream(1000L).collect { sample ->
@@ -84,14 +86,22 @@ class RunkuViewModel(app: Application) : AndroidViewModel(app) {
             }
         }
         hrJob?.cancel()
-        if (hrSource == "ble") {
-            hrJob = viewModelScope.launch {
+        hrJob = when (hrSource) {
+            "ble" -> viewModelScope.launch {
+                runCatching { BleHeartRate(context).stream().collect { bpm -> onHeartRate(bpm) } }
+            }
+            "camera" -> viewModelScope.launch {
+                val owner = lifecycleOwner ?: return@launch
                 runCatching {
-                    BleHeartRate(context).stream().collect { bpm -> onHeartRate(bpm) }
+                    CameraHeartRate(context).stream(owner).collect { bpm -> onHeartRate(bpm) }
                 }
             }
+            else -> null
         }
     }
+
+    /** Pause/resume the camera HR sensor (torch off when not needed). */
+    fun stopHeartRate() { hrJob?.cancel(); hrJob = null }
 
     fun unbindSensors() {
         gpsJob?.cancel(); gpsJob = null
@@ -164,7 +174,7 @@ class RunkuViewModel(app: Application) : AndroidViewModel(app) {
         if (!_live.value.running || saving) return
         saving = true
         val s = _live.value
-        _live.value = s.copy(paused = true)
+        _live.value = s.copy(running = false, paused = true, saving = true)
         stopTicker()
         unbindSensors()
         viewModelScope.launch {

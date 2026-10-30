@@ -74,7 +74,11 @@ fun MapsScreen(nav: NavController) {
 
             items(MapCatalog.regions) { region ->
                 val message = statuses[region.id]
-                val on = remember(message) { MapCatalog.installed(context, region) }
+                val on by androidx.compose.runtime.produceState(false, region.id) {
+                    value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                        MapCatalog.installed(context, region)
+                    }
+                }
                 RunkuCard(Modifier.fillMaxWidth()) {
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) {

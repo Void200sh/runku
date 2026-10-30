@@ -42,6 +42,7 @@ dependencies {
 
     implementation("androidx.core:core-ktx:1.13.1")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.6")
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.6")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.6")
     implementation("androidx.activity:activity-compose:1.9.2")
 
@@ -66,6 +67,12 @@ dependencies {
 
     // Offline map
     implementation("org.osmdroid:osmdroid-android:6.1.20")
+
+    // CameraX (camera-based heart rate PPG — no Bluetooth needed)
+    val camerax = "1.3.4"
+    implementation("androidx.camera:camera-core:$camerax")
+    implementation("androidx.camera:camera-camera2:$camerax")
+    implementation("androidx.camera:camera-lifecycle:$camerax")
 
     // Permissions
     implementation("com.google.accompanist:accompanist-permissions:0.36.0")

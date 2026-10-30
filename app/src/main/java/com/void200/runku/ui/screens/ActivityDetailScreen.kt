@@ -230,7 +230,7 @@ fun ActivityDetailScreen(vm: RunkuViewModel, id: Long, nav: NavController) {
                         splits.forEach { sp ->
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text(
-                                    if (sp.isPartial) "%.1f".format(activity!!.distanceMeters / 1000.0) else "${sp.km} km",
+                                    if (sp.isPartial) "%.1f km".format(act.distanceMeters / 1000.0) else "${sp.km} km",
                                     fontSize = 12.sp, fontWeight = FontWeight.Bold, color = c.muted,
                                     modifier = Modifier.width(52.dp),
                                 )

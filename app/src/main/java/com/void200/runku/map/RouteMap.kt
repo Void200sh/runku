@@ -13,7 +13,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -45,11 +51,21 @@ fun RouteMap(
     val context = LocalContext.current
     val store = remember { OfflineMapStore(context) }
 
-    // Re-evaluate pack on every recomposition (no remember) so newly
-    // downloaded maps are picked up without restarting the app/run.
-    val pack = run {
+    // Load available packs ONCE, off the main thread. Never re-read disk on
+    // every GPS sample (that caused jank while running).
+    var packs by remember { mutableStateOf<List<OfflineMapStore.OfflineMap>?>(null) }
+    LaunchedEffect(Unit) {
+        packs = withContext(Dispatchers.IO) { store.available() }
+    }
+
+    // Select a pack for the current area. Recompute only when a coarse
+    // position bucket changes, not for every single point.
+    val pack = remember(packs, points.size / 15) {
         val last = points.lastOrNull()
-        if (last != null) store.packFor(last.lat, last.lon) else store.available().firstOrNull()
+        val all = packs ?: emptyList()
+        if (last != null) {
+            all.firstOrNull { it.bounds?.contains(last.lat, last.lon) == true } ?: all.firstOrNull()
+        } else all.firstOrNull()
     }
 
     if (pack == null || forceCanvas) {

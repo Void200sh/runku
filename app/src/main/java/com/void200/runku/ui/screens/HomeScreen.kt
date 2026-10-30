@@ -66,7 +66,9 @@ fun HomeScreen(vm: RunkuViewModel, nav: NavController) {
                 .padding(top = 8.dp),
         ) {
             val offlineStore = androidx.compose.runtime.remember(context) { OfflineMapStore(context) }
-            val packs = androidx.compose.runtime.remember(offlineStore) { offlineStore.available() }
+            val packs by androidx.compose.runtime.produceState<List<OfflineMapStore.OfflineMap>>(emptyList()) {
+                value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { offlineStore.available() }
+            }
             val pack = packs.firstOrNull()
             val cityName = pack?.name ?: "runku"
 

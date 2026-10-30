@@ -25,7 +25,7 @@ class SettingsStore(private val context: Context) {
         val theme: RunkuTheme = RunkuTheme.PIXEL,
         val darkMode: String = "auto",
         val mapMode: String = "canvas",
-        val hrSource: String = "ble",
+        val hrSource: String = "camera",
         val unit: String = "km",
         val onboarded: Boolean = false,
     )
@@ -35,7 +35,7 @@ class SettingsStore(private val context: Context) {
             theme = RunkuTheme.fromId(p[KEY_THEME] ?: "pixel"),
             darkMode = p[KEY_DARK] ?: "auto",
             mapMode = p[KEY_MAP] ?: "canvas",
-            hrSource = p[KEY_HR] ?: "ble",
+            hrSource = p[KEY_HR] ?: "camera",
             unit = p[KEY_UNIT] ?: "km",
             onboarded = p[KEY_ONBOARD] ?: false,
         )
